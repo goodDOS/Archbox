@@ -161,9 +161,9 @@ const api = {
   menuContext: p => call('menu:context', p),
   /* 复制任意文本（绕开沙盒剪贴板权限），返回是否写入成功 */
   copyText: p => call('clipboard:writeText', p),
-  /* Beta.329 自绘右键菜单：写图片到剪贴板（data: URI in，返回是否成功） */
+  /* Beta.325 自绘右键菜单：写图片到剪贴板（data: URI in，返回是否成功） */
   clipWriteImage: p => call('clipboard:writeImage', p),
-  /* Beta.329 自绘右键菜单：读剪贴板三形态 { text, html, image }（image 为 data: URI 或空） */
+  /* Beta.325 自绘右键菜单：读剪贴板三形态 { text, html, image }（image 为 data: URI 或空） */
   clipRead: () => call('clipboard:read'),
   /* 内联图片另存为（data: URI → 文件），返回落盘路径或 null（用户取消） */
   imageSaveAs: p => call('image:saveAs', p),

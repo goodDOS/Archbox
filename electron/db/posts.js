@@ -88,7 +88,7 @@ function buildWhere(f) {
 function listPosts(f = {}) {
   const w = buildWhere(f);
   const { limit, offset } = normalizePage(f);
-  // Beta.327：tnames 子查询按 TRIM(t.name)<>'' 过滤历史脏数据（空名标签）。
+  // Beta.325：tnames 子查询按 TRIM(t.name)<>'' 过滤历史脏数据（空名标签）。
   // 现行写入链 resolveTagIds 拦空名，脏行只可能来自旧版本；
   // 不过滤则列表/导出会带出空段（「；；」），用户看着就是一条空标签。
   return all(
@@ -188,7 +188,7 @@ function getPost(id, opts = {}) {
   ]).forEach(r => {
     fields[r.code] = r.value;
   });
-  // Beta.327：TRIM(t.name)<>'' 与 listPosts 的 tnames 同口径过滤空名脏行。
+  // Beta.325：TRIM(t.name)<>'' 与 listPosts 的 tnames 同口径过滤空名脏行。
   // 【不过滤会怎样】编辑页载入 form.tags 带进 ''，界面渲染一个空 chip；
   //   用户删掉它再保存，sameSnapshot 的 normTags 把 [''] 归一成 []，
   //   判「无实质改动」直接 return —— 空关联永远删不掉（用户报的原始现场）。
@@ -568,7 +568,7 @@ function mergePost({ targetId, draft }, userId, opts = {}) {
     if (String(val || '').trim() !== '') mergedFields[k] = String(val).trim().slice(0, 5000);
   }
   // 合并的标签并集也走 normTags：入参 draft.tags 可能来自旧包/外部链路，
-  // 与 getPost 读侧过滤（Beta.327）共同保证空名进不了 applyFieldsAndTags。
+  // 与 getPost 读侧过滤（Beta.325）共同保证空名进不了 applyFieldsAndTags。
   const mergedTags = normTags([...(old.tags || []), ...(draft.tags || [])]);
   // 整体过一次 extract：old.content_html 是库里的短链（原样跳过），
   // incomingHtml 里可能带 data: 内联图（搬库）。一次替换覆盖两侧，无需分别处理。

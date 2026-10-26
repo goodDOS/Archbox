@@ -38,7 +38,7 @@ function registerCleanup() {
     const item = (p && p.item) || 'images';
     if (!ITEMS.includes(item)) throw new Error(i18n.errKey('common.errUnknownCleanupItem', { item }));
     if (item === 'emptyTags') {
-      // Beta.327：空标签没有字节概念（省下的是两行脏记录），统计口径改为
+      // Beta.325：空标签没有字节概念（省下的是两行脏记录），统计口径改为
       // 「空名标签行数 + 牵连的文档关联数」——用户要判断的是牵连面，不是体积。
       const s = db.emptyTagStats();
       return {
@@ -97,7 +97,7 @@ function registerCleanup() {
     if (!ITEMS.includes(item)) throw new Error(i18n.errKey('common.errUnknownCleanupItem', { item }));
     assertWritable();
     if (item === 'emptyTags') {
-      // Beta.327：空标签是「删不掉的存量脏数据」的根因修复（sameSnapshot 归一化
+      // Beta.325：空标签是「删不掉的存量脏数据」的根因修复（sameSnapshot 归一化
       // 让 ['']≡[]，用户手动删空 chip 再保存会被判无改动，关联永远留在库里）。
       // 读侧过滤让界面不再显示，这里把库里的根真正删掉。
       const before = db.emptyTagStats();

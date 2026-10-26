@@ -4,7 +4,7 @@ import { t } from '../i18n';
 import { toastWarn } from '../feedback';
 
 /**
- * 右键菜单（Beta.169 需求 3 → Beta.329 需求 #434 → Beta.330 全站覆盖）。
+ * 右键菜单（Beta.169 需求 3 → Beta.325 需求 #434 → Beta.325 全站覆盖）。
  *
  * ---------- 全站自绘，只有输入框保留原生 ----------
  * 1. **自绘路径**（渲染层 ContextMenu.vue）：查看态正文、图片、富文本编辑区，

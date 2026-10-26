@@ -122,7 +122,7 @@ function deleteCategory(id, userId) {
 const EMPTY_TAG_BARE = "TRIM(name)=''";
 const EMPTY_TAG_ALIASED = "TRIM(t.name)=''";
 function listTags() {
-  // 读侧过滤空名：存量脏行不再冒到标签管理页 / 标签云弹窗（Beta.327）。
+  // 读侧过滤空名：存量脏行不再冒到标签管理页 / 标签云弹窗（Beta.325）。
   // 删不掉又看得见的空行正是用户报「空标签」的现场，彻底清净靠「数据清洗 · 空标签」。
   return all(
     `SELECT t.*, (SELECT COUNT(*) FROM post_tags pt WHERE pt.tag_id=t.id) post_count FROM tags t WHERE NOT ${EMPTY_TAG_BARE} ORDER BY post_count DESC, t.id`

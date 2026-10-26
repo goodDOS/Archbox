@@ -1,6 +1,6 @@
 <template>
   <button type="button" class="cp-trigger" ref="rootBtn" :title="t(titleKey)" :aria-label="t(titleKey)" @click="toggle">
-    <!-- 图标按用途区分，取 WPS / Office 文字软件的通行样式（Beta.328 用户要求
+    <!-- 图标按用途区分，取 WPS / Office 文字软件的通行样式（Beta.325 用户要求
          「文字颜色与背景高亮图标参考 wps 或 office 等文字软件的样式」）：
            · 文字颜色 = 粗体 A 下压一条厚色条（AntD FontColorsOutlined，
              即 Office「字体颜色」按钮的原形）。整枚图标随当前色着色，
@@ -371,7 +371,7 @@ const svBackground = computed(
 .cp-icon {
   color: currentColor;
 }
-/* 紧凑皮肤的色条（仅高亮用途，Beta.328 起文字颜色改由 FontColorsOutlined 自带色条）：
+/* 紧凑皮肤的色条（仅高亮用途，Beta.325 起文字颜色改由 FontColorsOutlined 自带色条）：
  * 贴在图标下沿，宽度与图标齐。高亮用「实心块」形（比文字颜色的下划线形更高），
  * 两种用途光看色条形状也能区分，不必依赖颜色本身。 */
 .cp-bar {

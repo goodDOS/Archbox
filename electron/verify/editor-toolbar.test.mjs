@@ -1,5 +1,5 @@
 /**
- * 编辑工具栏重构专项回归（Beta.328，对应用户七点要求）。
+ * 编辑工具栏重构专项回归（Beta.325，对应用户七点要求）。
  *
  * 【为什么单独一场】工具栏是「删功能 + 改顺序 + 换图标 + 加能力」的混合改动，
  *   且其中「禁止插入链接」必须从 schema 层根除——只删按钮的话，
@@ -51,7 +51,7 @@ const icons = read('scripts/gen-icons.mjs');
 /* 工具栏模板段（editor-toolbar 开 div 到紧随其后的 EditorContent 之前）——
    顺序断言只在这段里比，避免与查看态页头（也有查找/保存等按钮）串味。
    不能按 </div> 配对截取：下拉的 #extra 插槽里也有 div，第一个 </div>
-   会把工具栏拦腰截断（Beta.328 实测踩过）。 */
+   会把工具栏拦腰截断（Beta.325 实测踩过）。 */
 const tbStart = tpl.indexOf('<div class="editor-toolbar">');
 const toolbar = tpl.slice(tbStart, tpl.indexOf('<EditorContent'));
 

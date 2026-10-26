@@ -28,7 +28,7 @@
              它落在 v-if="!editing" 的 <template> 内（见本文件上方），而编辑模式走
              v-else 分支、不渲染 .post-main。
              ★ Beta.315（任务418）起编辑态也支持页内查找（标题/字段/正文混合引擎）；
-               彼时编辑态入口只有 Ctrl+F。★ Beta.329（用户需求「预览前加页内搜索按钮」）
+               彼时编辑态入口只有 Ctrl+F。★ Beta.325（用户需求「预览前加页内搜索按钮」）
                起编辑态页头也补了这枚按钮，与查看态同款同 key（见下方 v-else 分支）——
                查找范围恒为「正在编辑的内容」，两侧语义一致，不再是「编辑态无按钮」。 -->
         <button
@@ -205,7 +205,7 @@
           <Icon name="layers" :size="16" />
           <span v-if="templateCount" class="draft-badge">{{ templateCount }}</span>
         </button>
-        <!-- ★ Beta.329（用户需求：「另存为前加预览按钮、预览前加页内搜索按钮」）：
+        <!-- ★ Beta.325（用户需求：「另存为前加预览按钮、预览前加页内搜索按钮」）：
              页内查找 —— 编辑态查找能力自 Beta.315/#418 起就存在（标题框/字段框 overlay
              + 正文 PM 装饰混合引擎，见 utils/editFind.js），入口原只有 Ctrl+F；
              用户明确要求补一枚按钮入口，与查看态页头那枚同款：同图标 search、
@@ -222,7 +222,7 @@
         >
           <Icon name="search" :size="16" />
         </button>
-        <!-- ★ Beta.329（用户需求）：预览 —— 「保存前先看渲染效果」，不必先落库再回查看态。
+        <!-- ★ Beta.325（用户需求）：预览 —— 「保存前先看渲染效果」，不必先落库再回查看态。
              渲染内容 = contentHtml（onUpdate 实时跟随 editor.getHTML()）过
              safeHtml + markSelectableMedia，与查看态 renderedHtml 同一条净化链路，
              保存后看到的就是预览里看到的（XSS 口径不因弹层而降级）。
@@ -394,14 +394,14 @@
             </div>
           </div>
 
-          <!-- 富文本编辑器（类 WordPress）：Beta.326 起移除「代码视图」（用户要求
+          <!-- 富文本编辑器（类 WordPress）：Beta.325 起移除「代码视图」（用户要求
                「删除代码预览模式并清除相关代码」）。编辑器恒为富文本态；原先那对
                普通/代码 切换标签、HTML 源码序列化、内联图占位符折叠与浮层按钮、
                保存前的占位符完好校验、editFind 的 .code-area 查找目标一并移除。
                若将来要恢复此功能，先读 git 历史里 Beta.322–325 的几轮整改
                （只读化、占位符浮层、schema 外标签检出），那些坑不会随功能回来而自动消失。 -->
           <div class="card" style="padding: 16px">
-            <!-- ★ Beta.328：工具栏按主流文字工具（Word / WPS 的「开始」功能区）重排，
+            <!-- ★ Beta.325：工具栏按主流文字工具（Word / WPS 的「开始」功能区）重排，
                  并一次落实用户七点要求：
                  ① 移除页内查找按钮（编辑态入口统一走 Ctrl+F，见本文件页头按钮注释）；
                  ② emoji 移到插入图片前（同属「插入」组，表情比图片更常用）；
@@ -437,7 +437,7 @@
               </button>
               <span class="tb-sep"></span>
               <!-- 字号：触发器即「字号框」——显示当前字号（Word 形态，未设为默认字号），
-                   下拉含预设与自定义像素行（Beta.328 用户要求「显示当前字号并可自定义」）。 -->
+                   下拉含预设与自定义像素行（Beta.325 用户要求「显示当前字号并可自定义」）。 -->
               <Dropdown
                 class="tb-dd tb-dd-fs"
                 variant="toolbar"
@@ -672,7 +672,7 @@
                 @change="onAlignChange"
               />
               <span class="tb-sep"></span>
-              <!-- 插入：emoji 在图片前（Beta.328 用户要求）。面板分类固定（不存最近使用），
+              <!-- 插入：emoji 在图片前（Beta.325 用户要求）。面板分类固定（不存最近使用），
                    默认插入到光标处，底栏可切换为「复制到剪贴板」以便在标题/标签等非富文本控件里用。 -->
               <EmojiPicker ref="emojiRef" :disabled="!store.writable" @pick="onEmojiPick" />
               <button
@@ -970,7 +970,7 @@
       </template>
     </Modal>
 
-    <!-- 编辑内容预览（Beta.329，用户需求「另存为前加预览按钮」）：
+    <!-- 编辑内容预览（Beta.325，用户需求「另存为前加预览按钮」）：
          渲染的是「正在编辑、尚未保存」的内容（editPreviewHtml 实时跟随 contentHtml），
          与历史版本预览（previewVer，落库快照）是两份不同数据，故独立一个弹层、
          不共用 previewVer 状态。形制复用 .pv-*（同源样式，不另起一套）。
@@ -1084,7 +1084,7 @@ import EmojiPicker from '../components/post/EmojiPicker.vue';
 import TagCloud from '../components/post/TagCloud.vue';
 import Dropdown from '../components/Dropdown.vue';
 import ColorPicker from '../components/ColorPicker.vue';
-// Beta.328：computeFixedPosition 随链接浮层一起移除（最后的使用点已删），
+// Beta.325：computeFixedPosition 随链接浮层一起移除（最后的使用点已删），
 // 弹层定位统一由 Dropdown / ColorPicker / EmojiPicker 各自封装，本文件不再自算坐标。
 import { useEditor, EditorContent } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
@@ -1256,7 +1256,7 @@ const contentHtml = ref('');
  *   Image 必须显式 allowBase64 —— 3.6+ 起默认拒绝 data: URI，而本项目图片全部
  *   base64 内联（数据铁律），不开启等于库存图片在编辑器里集体消失。
  *   inline: true 让图片成为行内节点，与「图片插在段落中」的既有形态一致。
- * ★ Beta.328：`link: false` 彻底摘除链接扩展（用户要求「禁止插入链接」）。
+ * ★ Beta.325：`link: false` 彻底摘除链接扩展（用户要求「禁止插入链接」）。
  *   按钮/浮层只是入口，粘贴网页里的 <a>、从别处拖入的链接照样能造出链接标记，
  *   所以必须从 schema 上禁掉：扩展不在表里，ProseMirror 解析 <a> 时
  *   mark 无对应类型直接丢弃（文本保留、不成链接），输入裸网址也只是纯文本。
@@ -1301,7 +1301,7 @@ const isOn = (name, attrs) => {
 
 const editor = useEditor({
   extensions: [
-    // link: false —— 禁止插入链接（Beta.328，理由见上方头注释）
+    // link: false —— 禁止插入链接（Beta.325，理由见上方头注释）
     StarterKit.configure({ link: false }),
     ImageSized,
     TextAlign.configure({ types: ['heading', 'paragraph'] }),
@@ -1370,7 +1370,7 @@ const form = reactive({
   no: ''
 });
 // 当前编辑内容快照（标题/分类/状态/标签/字段/正文），任意字段变更都会触发重算
-// Beta.327：tags 与 buildDraft 同走 cleanTags —— 两条链路口径一致，
+// Beta.325：tags 与 buildDraft 同走 cleanTags —— 两条链路口径一致，
 //   删掉空 chip 后「表单 ≠ 基线」的比对才不会与「后端判无改动」打架。
 const snapshot = computed(() =>
   JSON.stringify({
@@ -1510,7 +1510,7 @@ async function enterEdit() {
   form.title = post.value.title;
   form.regionId = post.value.region_id; // ★ Beta.253：编辑态大区下拉的初值 = 文档当前所属大区
   form.categoryId = post.value.category_id;
-  // Beta.327：载入即过 cleanTags —— 存量文档若带空名标签（旧版本写入），
+  // Beta.325：载入即过 cleanTags —— 存量文档若带空名标签（旧版本写入），
   // 界面不再渲染空 chip；与后端读侧过滤（TRIM(t.name)<>''）双保险
   form.tags = cleanTags(post.value.tags);
   form.fields = { ...(post.value.fields || {}) };
@@ -1641,7 +1641,7 @@ async function pickTemplate(tpl) {
   form.title = tpl.title || '';
   form.regionId = tpl.region_id || store.params.regionId; // ★ Beta.253：模板自带大区优先
   form.categoryId = tpl.category_id || null;
-  // Beta.327：模板同样可能带存量空标签，载入即清洗（与 enterEdit 同口径）
+  // Beta.325：模板同样可能带存量空标签，载入即清洗（与 enterEdit 同口径）
   form.tags = cleanTags(tpl.tags);
   form.fields = { ...(tpl.fields || {}) };
   form.status = 'published';
@@ -1875,7 +1875,7 @@ function onAlignChange(v) {
   // 错的只是这一处调用方式。走 chainRun 与其它格式按钮同一路径。
   chainRun(c => c.setTextAlign(v));
 }
-/* ---- 字号（Beta.328：改为「Word 字号框」形态）----
+/* ---- 字号（Beta.325：改为「Word 字号框」形态）----
  * 【用户原话】「字号选择按钮应当显示当前字号并可自定义」。
  * 【为什么选项改成数字】原先五档是「小号/正常/大号/特大」的语义名，
  *   触发器又是个固定图标 —— 用户既看不出当前是几号字，自定义值（如 17px）
@@ -1943,7 +1943,7 @@ async function onEmojiPick({ emoji, copy }) {
 }
 
 /* ---- 插入图片 ----
- * Beta.328：原先此处的「链接按钮 + 地址浮层」整段移除（用户要求禁止插入链接）。
+ * Beta.325：原先此处的「链接按钮 + 地址浮层」整段移除（用户要求禁止插入链接）。
  * 禁链接不靠删按钮——粘贴网页、拖入同样能造出链接标记，根除办法是
  * StarterKit.configure({ link: false }) 把扩展摘掉（见 useEditor 处注释）。
  * 这段历史（linkPop 定位 / Esc 关闭 / 预填改链接）在 git 历史 Beta.315–327 可查。 */
@@ -2271,7 +2271,7 @@ function onContentClick(e) {
   openLightbox(img.getAttribute('src'), img.getAttribute('alt') || '');
 }
 
-/* ---- 标签清洗（Beta.327 · 用户需求「保存时清除空标签」）----
+/* ---- 标签清洗（Beta.325 · 用户需求「保存时清除空标签」）----
  * 空标签（空串 / 纯空白）的防线分四层，本函数是前端入口与出口的共用口径：
  *   ① 入口：载入（存量文档 / 模板）与标签云回写时清洗，界面不渲染空 chip；
  *   ② 出口：buildDraft 提交前清洗，载荷绝不带空标签（与后端 resolveTagIds 同口径）；
@@ -2314,7 +2314,7 @@ function openTagCloud() {
 }
 function applyTagCloud(list) {
   // 统一走 MAX_TAGS：弹窗里已拦过超选，这里再兜一次（弹窗可能来自旧版本残留状态）
-  // Beta.327：回写同样过 cleanTags —— 存量空名标签万一残留在 allTags 里，勾选也不带回表单
+  // Beta.325：回写同样过 cleanTags —— 存量空名标签万一残留在 allTags 里，勾选也不带回表单
   form.tags = cleanTags(Array.from(list || [])).slice(0, MAX_TAGS);
   tagCloudOpen.value = false;
   markDirty();
@@ -2357,11 +2357,11 @@ function buildDraft() {
     // 同样必须深拷贝：form.tags 是 reactive 数组，`[...form.tags]` 只拆了最外层，
     // 一旦标签是对象（当前是字符串，但别给未来埋雷）就又会踩同一个坑。
     // JSON 深拷贝一次性消灭所有 Proxy，是这条链路上唯一稳妥的做法。
-    // Beta.327：保存出口过 cleanTags（用户需求「保存时清除空标签」）。
+    // Beta.325：保存出口过 cleanTags（用户需求「保存时清除空标签」）。
     // 与后端 resolveTagIds 同口径：空名标签名在写入链就被拦，载荷里更不该出现。
     tags: cleanTags(JSON.parse(JSON.stringify(form.tags || []))),
     fields: JSON.parse(JSON.stringify(fields)),
-    // Beta.326：代码视图移除后，正文恒取编辑器当前 HTML（原先 code 态要走
+    // Beta.325：代码视图移除后，正文恒取编辑器当前 HTML（原先 code 态要走
     // unfoldImages(codeText) 还原占位符，该路径连同代码视图一起删除）
     contentHtml: editor.value ? editor.value.getHTML() : '',
     status: form.status,
@@ -2495,7 +2495,7 @@ async function onForceNew() {
 const previewVer = ref(null);
 const previewHtml = computed(() => markSelectableMedia(safeHtml(previewVer.value && previewVer.value.content_html)));
 
-// ★ Beta.329（用户需求「另存为前加预览按钮」）：编辑内容预览。
+// ★ Beta.325（用户需求「另存为前加预览按钮」）：编辑内容预览。
 //   与上方 previewVer 是两份数据：那个看「落库的历史快照」，这个看「正在编辑、尚未保存」
 //   的内容。渲染链路与查看态 renderedHtml 完全同源（safeHtml + markSelectableMedia），
 //   预览里看到的就是保存后查看态看到的（XSS 口径不因弹层而降级）。
@@ -2790,7 +2790,7 @@ watch(editing, async () => {
   await nextTick();
   if (findState.open && findState.text) findSet(findState.text);
 });
-/* ---- 自建右键面板的编辑器动作（Beta.329 / #434）----
+/* ---- 自建右键面板的编辑器动作（Beta.325 / #434）----
  *
  * 菜单项由 src/composables/useContextMenu.js 构建并派发，具体动作在这里落地
  * （ProseMirror 命令只有编辑页拿得到）。页面挂载时注册、卸载时注销 ——
@@ -2801,7 +2801,7 @@ watch(editing, async () => {
  *   粘贴   = 剪贴板内容插入光标处（图片 > 富文本 > 纯文本，取其一）
  *   全选   = 选中整篇正文
  */
-/** 自建右键面板的编辑器动作注销函数（Beta.329 / #434）；页面卸载时必须调用。 */
+/** 自建右键面板的编辑器动作注销函数（Beta.325 / #434）；页面卸载时必须调用。 */
 let unregisterEditorCtx = null;
 
 function ctxCut(selText) {
@@ -2843,7 +2843,7 @@ onMounted(() => {
       if (view) view.dispatch(editor.value.state.tr);
     }
   });
-  // 自建右键面板（Beta.329 / #434）：注册编辑器的剪切/粘贴/全选动作，
+  // 自建右键面板（Beta.325 / #434）：注册编辑器的剪切/粘贴/全选动作，
   // 面板本体在 App.vue 挂载唯一实例（菜单项由 useContextMenu.js 构建）。
   unregisterEditorCtx = registerEditorCtx({
     cut: ctxCut,
@@ -2862,7 +2862,7 @@ onBeforeUnmount(() => {
     unregisterEditorCtx();
     unregisterEditorCtx = null;
   }
-  // Beta.328：原链接浮层的 document mousedown/keydown 监听随浮层移除，
+  // Beta.325：原链接浮层的 document mousedown/keydown 监听随浮层移除，
   // 这两个 removeEventListener 是当时的清理残留，一并删除。
   clearEditorFindProvider();
   if (editor.value) editor.value.destroy();
@@ -3278,7 +3278,7 @@ onBeforeUnmount(() => {
   font-variant-numeric: tabular-nums;
   min-width: 44px;
 }
-/* 字号下拉的「自定义像素」行（Beta.328）：挂在 .dd-popup 尾部（Dropdown #extra 插槽）。
+/* 字号下拉的「自定义像素」行（Beta.325）：挂在 .dd-popup 尾部（Dropdown #extra 插槽）。
  * 注意 .dd-popup 是 Teleport 到 body 的，但本行元素由本模板编译、自带 scoped 属性，
  * 因此这里用**独立类选择器**即可命中（不能写 .dd-popup .tb-fs-custom ——
  * .dd-popup 不带本组件的 scope 属性，跨组件后代选择器会静默失效）。 */

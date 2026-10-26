@@ -25,7 +25,7 @@
            传 icon 时触发器只剩图标 + 折叠箭头，文字仍以 title/aria-label 保留可读性，
            不新增平行组件（见 no-duplicate-code：同类控件先扩既有实现）。 -->
       <Icon v-if="resolvedIcon" :name="resolvedIcon" :size="iconSize" class="dd-icon" />
-      <!-- ★ Beta.328：triggerLabel 覆盖层。选中值不在 options 里时（编辑器字号的
+      <!-- ★ Beta.325：triggerLabel 覆盖层。选中值不在 options 里时（编辑器字号的
            自定义像素值），selectedLabel 匹配不上只会显示占位符，调用方可传当前真实值。 -->
       <span v-else-if="triggerLabel" class="dd-label">{{ triggerLabel }}</span>
       <span v-else class="dd-label" :class="{ 'dd-placeholder': !selectedLabel }">
@@ -55,7 +55,7 @@
             <span class="dd-opt-label">{{ opt.label }}</span>
           </div>
           <div v-if="!normalOptions.length" class="dd-empty">{{ t('ui.dropdownEmpty') }}</div>
-          <!-- ★ Beta.328：extra 插槽 —— 选项尾部的自定义行（编辑器字号的「自定义像素」）。
+          <!-- ★ Beta.325：extra 插槽 —— 选项尾部的自定义行（编辑器字号的「自定义像素」）。
                宿主自行处理 @mousedown.stop：.dd-popup 上有 @mousedown.prevent
                （防点选项抢走编辑器焦点），不截停会让插槽里的输入框无法获得焦点。 -->
           <slot name="extra" />
@@ -83,7 +83,7 @@
  *   icon         传图标名则进入「纯图标」模式：触发器只显示该图标（Beta.316，工具栏用）
  *   labelKey     icon 模式下给触发器提供 title / aria-label 的 i18n key
  *                （纯图标不能没有可读线索，口径同 ui-theme-rules 第 8 节）
- *   triggerLabel 触发器显示文字覆盖（Beta.328）：非空且未传 icon 时优先于 selectedLabel。
+ *   triggerLabel 触发器显示文字覆盖（Beta.325）：非空且未传 icon 时优先于 selectedLabel。
  *                场景：编辑器字号框的当前值可能是自定义像素值，不在 options 里，
  *                selectedLabel 只会在 options 中匹配，匹配不上就退化成占位符。
  *   #extra 插槽  弹层选项尾部的自定义行（编辑器字号的「自定义像素」输入）。
@@ -336,7 +336,7 @@ onBeforeUnmount(() => {
 watch(
   () => props.modelValue,
   () => {
-    /* ★ Beta.328：值被外部改掉时收起弹层。
+    /* ★ Beta.325：值被外部改掉时收起弹层。
        宿主点选项走的 selectOption 本就会关闭；这条兜住「不经过选项的改值」路径 ——
        典型场景是编辑器字号框的「自定义像素」行：提交后当前字号变化、
        modelValue 随之变化，弹层必须收起，否则盖在正文上方挡住光标。

@@ -38,7 +38,7 @@ const ICONS = {
   quote: ['lucide', 'text-quote'], // ★ 原为对话气泡 → Lucide 引号形
   superscript: ['lucide', 'superscript'], // ★ 原为 VertAlignTop（向上箭头）→ 真正的 x²
   subscript: ['lucide', 'subscript'], // ★ 原为 VertAlignBottom（向下箭头）→ 真正的 x₂
-  // Beta.328：行内代码按钮随「工具栏重构」移除（用户要求），Code 标记仍留在
+  // Beta.325：行内代码按钮随「工具栏重构」移除（用户要求），Code 标记仍留在
   // StarterKit schema 里（存量正文的行内代码照常渲染、清除格式可去掉标记），
   // 但工具栏不再提供入口，故 code 图标一并下架，避免留死数据。
   'code-block': ['lucide', 'square-code'], // ★ 方框包尖括号，与行内区分（行内按钮已移除，此形保留给代码块）
@@ -56,7 +56,7 @@ const ICONS = {
   // 文字颜色与高亮原先共用 ColorPicker 里的 ✦ 字符，两个按钮长得一模一样，
   // 用户分不清哪个改字色、哪个刷底色。各给一个语义明确的图标。
   'save-as': ['lucide', 'save-plus'], // 软盘 + 加号 = 另存为（save 是无加号的保存）
-  // ★ Beta.328：文字颜色图标改 WPS / Office 样式 —— 粗体 A 下压一条厚色条，
+  // ★ Beta.325：文字颜色图标改 WPS / Office 样式 —— 粗体 A 下压一条厚色条，
   //   即 Office「字体颜色」按钮的原形（AntD FontColorsOutlined）。
   //   原先用 Lucide baseline（A + 细基线），与工具栏下方另接的色条形成双线，不像 WPS。
   'text-color': ['antd', 'FontColorsOutlined'],
@@ -64,7 +64,7 @@ const ICONS = {
   'face-smile': ['lucide', 'smile'], // emoji 面板入口：笑脸本义（不是「微笑表情」某个具体 emoji）
   'rotate-ccw': ['lucide', 'undo-2'], // 撤销：带箭头的回退（纯半圆弧看不出「撤销」）
   'rotate-cw': ['lucide', 'redo-2'], // 重做：与撤销成对，方向明确
-  // Beta.328：link / unlink 随「禁止插入链接」一起下架（StarterKit link:false，
+  // Beta.325：link / unlink 随「禁止插入链接」一起下架（StarterKit link:false，
   // 工具栏按钮与地址浮层整段移除，无其它使用点）。
 
   /* ── 对齐下拉四项：用 Lucide 的 text-align-*（文本对齐专用）。

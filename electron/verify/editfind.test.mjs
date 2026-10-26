@@ -239,7 +239,7 @@ ok(editSearch('ALPHA', { matchCase: true }).matches === 0, '大小写敏感：AL
 ok(editSearch('ALPHA').matches === 4, '大小写不敏感：ALPHA 命中 4 处');
 
 // —— 场景 C：正文编辑器隐藏时不作目标（无 PM 命中、不刷新 provider） ——
-//   Beta.326：代码视图连同 .code-area 查找目标一并移除，此场景原测「代码态目标切换」，
+//   Beta.325：代码视图连同 .code-area 查找目标一并移除，此场景原测「代码态目标切换」，
 //   保留其中仍有价值的一半——编辑器不可见时 pmProvider 必须识相退场。
 mount(`
   <div class="edit-layout">
@@ -338,7 +338,7 @@ ok(
   ),
   '查看态↔编辑态切换后重搜（nextTick 等新 DOM 挂稳）'
 );
-// Beta.326：代码视图移除后，「视觉↔代码切换重搜」的触发点（switchView 内的
+// Beta.325：代码视图移除后，「视觉↔代码切换重搜」的触发点（switchView 内的
 // nextTick 块）随之删除；编辑态只剩 watch(editing) 一个重搜入口，上面已断言。
 ok(!/switchView/.test(pv), 'PostView 不再存在视图切换函数（代码视图已移除）');
 

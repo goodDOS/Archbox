@@ -1,8 +1,8 @@
 /**
- * 编辑态页头按钮专项回归（Beta.329，对应用户需求「另存为前加预览按钮、预览前加页内搜索按钮」）。
+ * 编辑态页头按钮专项回归（Beta.325，对应用户需求「另存为前加预览按钮、预览前加页内搜索按钮」）。
  *
  * 【为什么单独一场】本轮是「在既有页头上加两枚按钮 + 一个弹层」的增量改动：
- *   · 页内搜索按钮从工具栏移除（Beta.328）后，编辑态入口一度只剩 Ctrl+F，
+ *   · 页内搜索按钮从工具栏移除（Beta.325）后，编辑态入口一度只剩 Ctrl+F，
  *     用户明确要求把入口搬回页头（预览按钮之前）；
  *   · 预览按钮渲染的是「正在编辑、尚未保存」的内容，与历史版本预览
  *     （previewVer，落库快照）是两份数据，不能共用同一个弹层状态；
@@ -16,7 +16,7 @@
  *   [4] 编辑预览弹层：独立状态、title/icon、pv 形制、note、不带 data-find-scope
  *   [5] script：状态与净化链路声明齐全
  *   [6] i18n：新 key 14 语言同步 + 繁体逐字转写
- *   [7] 查看态注释已随 Beta.329 更新（旧注释声称「编辑态不设此按钮」）
+ *   [7] 查看态注释已随 Beta.325 更新（旧注释声称「编辑态不设此按钮」）
  *
  * 运行：node electron/verify/editor-head-buttons.test.mjs
  */
@@ -52,16 +52,16 @@ const codeOnly = postView
 const headStart = tpl.indexOf('<div class="page-head">');
 const saveGroupPos = tpl.indexOf('<div class="save-group">');
 const editHead = tpl.slice(headStart, saveGroupPos);
-/* 编辑预览弹层段：Beta.329 注释锚点到版本对比注释之前 */
-const modalStart = tpl.indexOf('<!-- 编辑内容预览（Beta.329');
+/* 编辑预览弹层段：Beta.325 注释锚点到版本对比注释之前 */
+const modalStart = tpl.indexOf('<!-- 编辑内容预览（Beta.325');
 const modalEnd = tpl.indexOf('<!-- 版本对比（只读并排）');
 const previewModal = tpl.slice(modalStart, modalEnd);
 /* 负向断言（「不碰 X」「不带 Y」）必须在剥掉注释的绑定段上测：
    注释里会字面提到被否定的对象（如「刻意不带 data-find-scope」），
-   直接在原文上测会被自己的设计文档误伤（Beta.329 实测踩过）。 */
+   直接在原文上测会被自己的设计文档误伤（Beta.325 实测踩过）。 */
 const modalBind = previewModal.replace(/<!--[\s\S]*?-->/g, '');
 
-console.log('[1] 编辑态页头：页内搜索按钮（Beta.328 从工具栏移除后迁回此处）');
+console.log('[1] 编辑态页头：页内搜索按钮（Beta.325 从工具栏移除后迁回此处）');
 {
   ok(headStart > 0 && saveGroupPos > headStart, '编辑态页头段可定位（page-head → save-group）');
   ok(/@click="findOpen"/.test(editHead), '编辑态页头有 findOpen 按钮');
@@ -169,11 +169,11 @@ console.log('[6] i18n：新 key 14 语言同步 + 繁体逐字转写');
   }
 }
 
-console.log('[7] 查看态注释已随 Beta.329 更新');
+console.log('[7] 查看态注释已随 Beta.325 更新');
 {
-  // 旧注释声称「编辑态不设此按钮」，与 Beta.329 新决策矛盾，必须改写而非留着误导
+  // 旧注释声称「编辑态不设此按钮」，与 Beta.325 新决策矛盾，必须改写而非留着误导
   ok(!/编辑态不设此按钮/.test(postView), '「编辑态不设此按钮」旧注释已清除');
-  ok(/Beta\.329（用户需求「预览前加页内搜索按钮」）/.test(postView), '查看态查找按钮注释已记录 Beta.329 决策变化');
+  ok(/Beta\.325（用户需求「预览前加页内搜索按钮」）/.test(postView), '查看态查找按钮注释已记录 Beta.325 决策变化');
 }
 
 console.log(`\n结果：${pass} 通过 / ${fail} 失败`);

@@ -41,7 +41,7 @@
           <!-- 预检结果：加载中 / 可清理数量 / 上次执行结果 -->
           <span class="cl-stat">
             <template v-if="busy[it.key]">{{ t('settings.cleanupScanning') }}</template>
-            <!-- Beta.327：空标签没有「字节」口径，统计的是「空名标签行数 + 牵连文档数」，
+            <!-- Beta.325：空标签没有「字节」口径，统计的是「空名标签行数 + 牵连文档数」，
                  单独走 found/last/pwdMsg 三组文案，不与图片项共用带 {size} 的模板 -->
             <template v-else-if="last[it.key]">
               {{
@@ -111,7 +111,7 @@ import { useSubmit } from '../../composables/useSubmit';
  */
 const CLEANUP_ITEMS = [
   { key: 'images', titleKey: 'settings.cleanupImagesTitle', descKey: 'settings.cleanupImagesDesc' },
-  // Beta.327：空标签（用户需求「保存时清除空标签」的存量层）。后端 electron/ipc/cleanup.js
+  // Beta.325：空标签（用户需求「保存时清除空标签」的存量层）。后端 electron/ipc/cleanup.js
   // 的 ITEMS 与这里的 key 一一对应；显示口径是「空名标签行数 + 牵连文档数」，不是字节。
   { key: 'emptyTags', titleKey: 'settings.cleanupEmptyTagsTitle', descKey: 'settings.cleanupEmptyTagsDesc' }
 ];
@@ -145,7 +145,7 @@ function runItem(it) {
     password: true,
     passwordTitle: t('settings.cleanupPwdTitle'),
     passwordAction: t('settings.cleanupRun'),
-    // Beta.327：空标签项的确认文案用「标签数 + 牵连文档数」，不用图片项的 {size}
+    // Beta.325：空标签项的确认文案用「标签数 + 牵连文档数」，不用图片项的 {size}
     passwordMessage:
       it.key === 'emptyTags'
         ? t('settings.cleanupEmptyTagsPwdMsg', {
