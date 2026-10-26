@@ -1,0 +1,940 @@
+/* ============ 统一 z-index 层级刻度 ============
+ * 全项目唯一的 z-index 来源。禁止在任何组件/样式里再写裸数字。
+ *
+ * 层序（低 → 高）：
+ *   hint < drawer < modal < float < dropdown < toast
+ *
+ * 每组间隔 1000：日后要往某两层之间插新层时，直接用组内空隙，不必重排全部数值。
+ * 消费方一律带 fallback（z-index: var(--z-modal)），变量万一缺失也不会退化成 auto。
+ *
+ * 两处刻意的取舍，改动前请先读：
+ * 1. modal 必须高于 drawer —— SharePanel 打开时用户拨动认证开关会弹确认框，
+ *    弹窗若被抽屉盖住就无法操作（Beta.162 修的就是这个）。
+ * 2. dropdown 低于 toast —— Toast 是操作结果反馈，必须始终可见；
+ *    代价是极端情况下（表单里展开下拉选值的同时弹出一条提示）Toast 可能遮住选项。
+ *    实际重叠概率很低：Toast 固定在屏幕顶部 56px，下拉列表跟随输入框在其下方。
+ *
+ * 例外：ImportWizard 的 .confirm-banner 是 position:sticky 的局部层序，
+ *      作用域限于 .wiz-body 滚动容器，永远不与本刻度的元素比较，故不纳入。 */
+:root {
+  --z-below-hint: 999; /* 低于 --z-hint(1000) 一档：历史版本侧栏 sticky（须被页头盖住，不反压标题条） */
+  --z-sticky: 2; /* sticky 局部层序：滚动容器内部的 sticky 表头/横幅（作用域限于滚动祖先，非全局刻度） */
+  --z-hint: 1000; /* 辅助悬浮控件：只读气泡 / 回到顶部 / 时钟告警条 */
+  --z-drawer: 2000; /* 侧滑抽屉遮罩 .sp-mask：SharePanel */
+  --z-modal: 3000; /* 弹窗遮罩 .modal-mask：所有 Modal / ConfirmDialog（须高于抽屉） */
+  --z-find: 3500; /* 页内查找条 .find-bar：须高于弹层，浮于历史版本预览等 Modal 之上，便于边预览边搜 */
+  --z-float: 4000; /* 悬浮日志窗 .float-log：FloatLog */
+  --z-dropdown: 5000; /* 下拉列表 .dd-popup：Dropdown（JS 内联样式） */
+  --z-toast: 6000; /* 全局 Toast .toast-wrap：最上层 */
+}
+
+/* ============ 遮罩层动画 token：全项目唯一来源 ============
+ * 弹窗/抽屉遮罩的「模糊半径 + 入场/退场时长」三个数值。
+ * 放在 :root 而非 base.css，是让八套主题能按需覆盖（例如 wire 主题把模糊关成 0）。
+ * base.css 的 .modal-mask / .sp-mask 只引用 --mask-blur / --mask-in / --mask-out，
+ * 不写裸数值 —— 与 z-index 刻度同一套「单一数据源」纪律。 */
+:root {
+  --mask-blur: 1px; /* 遮罩背景模糊半径；wire 主题 / reduced-motion 覆盖为 0。
+                          Beta.286 初版 10px（太浓）→ 287 改 4px（仍偏浓）→ 288 改 1px（极轻，
+                          仅让背景略有虚化，几乎不影响辨识） */
+  --mask-in: 0.18s; /* 遮罩入场时长（淡入 + 糊入） */
+  --mask-out: 0.14s; /* 遮罩退场时长（淡出 + 糊出，略快） */
+}
+
+/* ============ 全站字体：唯一来源 ============
+ * 两套栈由 src/utils/fontStack.js 定义，运行时按用户在「设置 → 显示 → 字体」中选择的模式
+ * 把值写到 :root 上（见 src/composables/useFontMode.js）。这里给的是**初值**——
+ * 必须与 fontStack.js 的 BUNDLED_STACK / MONO_STACK 保持一致，两边由
+ * electron/verify/font-stack.test.mjs 断言逐字相同，任一侧单独改动直接报红。
+ *
+ * 为什么要在 CSS 里再写一遍：JS 注入之前（首屏、登录门禁页）页面已经要渲染，
+ * 若变量未定义，font-family 整条声明失效，字体会回落到浏览器默认的 Times ——
+ * 用户会看到一瞬间的衬线字体。给初值就不会闪。
+ *
+ * 中文类字族必须排在系统字体之前：字体匹配逐字符进行，微软雅黑若排在前面会抢走全部汉字。 */
+:root {
+  --font-ui:
+    'Noto Sans', 'Noto Sans SC', 'Noto Sans TC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Arabic', 'Noto Color Emoji',
+    'Segoe UI Emoji', 'Apple Color Emoji', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Code', Consolas, 'Courier New', monospace;
+}
+
+/* ============ 主题预览卡示意色：全项目唯一来源 ============
+ * 设置页 ThemeSection 的主题预览卡（.t-preview）用这些色示意「各主题长什么样」。
+ * 它们是各主题的「身份色」静态示意，不随当前 UI 主题切换，故统一放 :root 层。
+ * 此前 31 处 hex 字面量散落在 ThemeSection.vue 的 scoped 样式里，现收敛到本文件，
+ * ThemeSection 只引用 --tp- 前缀的变量（形式 --tp-主题-部位）。
+ *
+ * 命名：--tp-主题-部位，部位 ∈ bg(卡底)/bar(顶条)/side(侧栏)/block(内容块)/
+ *        accent(强调色)/border(边框)。示例 --tp-light-bg、--tp-dark-accent。
+ * wire 主题顶条/侧栏/内容块共用一个边框色 --tp-wire-line，无填充（打印友好）。 */
+:root {
+  /* light 商务明亮 */
+  --tp-light-bg: #f4f5f7;
+  --tp-light-surface: #fff;
+  --tp-light-border: #e4e7ec;
+  --tp-light-accent: #3b6df0;
+  /* dark 商务暗黑 */
+  --tp-dark-bg: #101216;
+  --tp-dark-surface: #181b21;
+  --tp-dark-block: #1e222a;
+  --tp-dark-border: #2a2f3a;
+  --tp-dark-accent: #6c93ff;
+  /* wire 黑白线框 */
+  --tp-wire-bg: #fff;
+  --tp-wire-surface: #fff;
+  --tp-wire-line: #111;
+  /* cs16 军绿 */
+  --tp-cs16-bg: #4c5844;
+  --tp-cs16-surface: #3e4637;
+  --tp-cs16-block: #4a5440;
+  --tp-cs16-border: #5a6850;
+  --tp-cs16-accent: #988632;
+  /* bamboo 竹青 */
+  --tp-bamboo-bg: #a3b89e;
+  --tp-bamboo-surface: #ffffff;
+  --tp-bamboo-border: #d8e4cc;
+  --tp-bamboo-accent: #2f5a3d;
+  /* sandalwood 檀褐 */
+  --tp-sandalwood-bg: #e2c8b1;
+  --tp-sandalwood-surface: #ffffff;
+  --tp-sandalwood-border: #ead4be;
+  --tp-sandalwood-accent: #59391e;
+  /* sky 青空 */
+  --tp-sky-bg: #e1f0e5;
+  --tp-sky-surface: #ffffff;
+  --tp-sky-border: #cfe6e8;
+  --tp-sky-accent: #1e4d6c;
+  /* halflife 半条命（HEV 橙） */
+  --tp-halflife-bg: #0a0a0f;
+  --tp-halflife-surface: #13131b;
+  --tp-halflife-block: #1a1a1e;
+  --tp-halflife-border: #5a4328;
+  --tp-halflife-accent: #e8910c;
+}
+
+/* ============ 三套配色主题：商务明亮 / 商务暗黑 / 黑白线框（打印友好） ============ */
+:root,
+[data-theme='light'] {
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --surface-2: #f8f9fb;
+  --surface-3: #eef1f5;
+  --border: #e4e7ec;
+  --border-strong: #d3d8e0;
+  --text: #1c2333;
+  --text-2: #5c6478;
+  --text-3: #9aa3b5;
+  --accent: #3b6df0;
+  --accent-hover: #2f5bd8;
+  --accent-weak: #eaf0ff;
+  --accent-text: #ffffff;
+  --danger: #e5484d;
+  --danger-weak: #ffece9;
+  --ok: #2da44e;
+  --ok-weak: #e3f5e9;
+  --warn: #d29922;
+  --mark-bg: #ffe58f;
+  --mark-text: #4a3600;
+  --shadow: 0 1px 3px rgba(16, 24, 40, 0.07), 0 1px 2px rgba(16, 24, 40, 0.04);
+  --shadow-lg: 0 10px 32px rgba(16, 24, 40, 0.14);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 16px;
+  --sidebar-bg: #fbfbfd;
+  --titlebar-bg: #ffffff;
+  --btn-ghost-hover: #eceff3;
+  --scroll-thumb: #c9ced8;
+  --input-bg: #f2f3f5;
+  color-scheme: light;
+  /* 语义多色：统计卡图标底/顶条/badge —— light 主题同样多彩 */
+  --c-blue: #3b6df0;
+  --c-blue-weak: #eaf0ff;
+  --c-green: #2da44e;
+  --c-green-weak: #e7f6ec;
+  --c-orange: #d29922;
+  --c-orange-weak: #fdf3d8;
+  --c-purple: #8957e5;
+  --c-purple-weak: #f1e8ff;
+  --c-teal: #038387;
+  --c-teal-weak: #d8f3f3;
+  --c-pink: #db3a8c;
+  --c-pink-weak: #fde4f0;
+  --c-indigo: #5a5fd6;
+  --c-indigo-weak: #e7e8fc;
+  /* 页面渐变底：让 light 不再是大面积纯白 */
+  --bg-gradient:
+    radial-gradient(900px 400px at 12% -5%, var(--accent-weak), transparent 60%),
+    radial-gradient(700px 500px at 95% 110%, var(--c-purple-weak), transparent 55%), var(--bg);
+}
+
+[data-theme='dark'] {
+  --bg: #101216;
+  --surface: #181b21;
+  --surface-2: #1e222a;
+  --surface-3: #262b35;
+  --border: #2a2f3a;
+  --border-strong: #3a4150;
+  --text: #e8ebf1;
+  --text-2: #9aa3b5;
+  --text-3: #6b7383;
+  --accent: #6c93ff;
+  --accent-hover: #86a5ff;
+  --accent-weak: #1d2740;
+  --accent-text: #0d1117;
+  --danger: #ff6b6e;
+  --danger-weak: #3a2022;
+  --ok: #4ecf74;
+  --ok-weak: #17301f;
+  --warn: #e3b341;
+  --mark-bg: #5a4a12;
+  --mark-text: #ffe58f;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 32px rgba(0, 0, 0, 0.5);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 16px;
+  --sidebar-bg: #14161b;
+  --titlebar-bg: #181b21;
+  --btn-ghost-hover: #262b35;
+  --scroll-thumb: #3a4150;
+  --input-bg: #1e222a;
+  color-scheme: dark;
+  /* dark 多色：饱和度更高、弱底为深色玻璃感 */
+  --c-blue: #6c93ff;
+  --c-blue-weak: #1d2740;
+  --c-green: #4ecf74;
+  --c-green-weak: #16351f;
+  --c-orange: #e3b341;
+  --c-orange-weak: #3a2e10;
+  --c-purple: #b08bf0;
+  --c-purple-weak: #2a1e45;
+  --c-teal: #45c5c8;
+  --c-teal-weak: #10393b;
+  --c-pink: #f06fb0;
+  --c-pink-weak: #3d1a2c;
+  --c-indigo: #8a8ff5;
+  --c-indigo-weak: #1f2040;
+  --bg-gradient: var(--bg);
+}
+
+/* 黑白线稿主题：无阴影、无彩色填充，边框即结构，适合打印 */
+[data-theme='wire'] {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #ffffff;
+  --surface-3: #ffffff;
+  --border: #111111;
+  --border-strong: #000000;
+  --text: #111111;
+  --text-2: #444444;
+  --text-3: #666666;
+  --accent: #111111;
+  --accent-hover: #000000;
+  --accent-weak: #f2f2f2;
+  --accent-text: #ffffff;
+  --danger: #111111;
+  --danger-weak: #f2f2f2;
+  --ok: #111111;
+  --ok-weak: #e8e8e8;
+  --warn: #111111;
+  --mark-bg: #eeeeee;
+  --mark-text: #000000;
+  --shadow: none;
+  --shadow-lg: none;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 16px;
+  --sidebar-bg: #ffffff;
+  --titlebar-bg: #ffffff;
+  --btn-ghost-hover: #f0f0f0;
+  --scroll-thumb: #bbbbbb;
+  --input-bg: #ffffff;
+  color-scheme: light;
+  /* wire：所有语义色统一为墨色，弱底为浅灰，保持黑白线框一致 */
+  --c-blue: #111;
+  --c-blue-weak: #f2f2f2;
+  --c-green: #111;
+  --c-green-weak: #f2f2f2;
+  --c-orange: #111;
+  --c-orange-weak: #f2f2f2;
+  --c-purple: #111;
+  --c-purple-weak: #f2f2f2;
+  --c-teal: #111;
+  --c-teal-weak: #f2f2f2;
+  --c-pink: #111;
+  --c-pink-weak: #f2f2f2;
+  --c-indigo: #111;
+  --c-indigo-weak: #f2f2f2;
+  --bg-gradient: var(--bg);
+  /* ★ 线框主题的「实心色块」唯一真相 ★
+   * 黑白线框主题下不得出现黑色实心色块（--accent 在本主题就是墨色 #111），
+   * 否则激活项/进度条/开关会变成一块死黑，既破坏线框语汇、打印时也大量吞墨。
+   * 统一改为 45° 细斜线填充：线宽 1px / 周期 7px（理论墨量 ~14%），视觉上是「线」而非「块」
+   * —— 周期 5px（2px 线）实测墨占比达 47%（含文字），肉眼仍像黑块；
+   *    周期 7px 实测纯填充区 solid≈13%，斜线纹理清晰（wire-fill.pixel.cjs 实测）。
+   * 用法：background: var(--fill-line); border: 1px solid var(--text);
+   * 新增实心色块时请用 --fill-line，不要直接 background: var(--accent)。 */
+  --fill-line: repeating-linear-gradient(45deg, var(--text) 0 1px, transparent 1px 7px);
+}
+
+/* ============ CS1.6 皮肤：HUD/菜单配色（暗橄榄绿底 + 黄绿文字 + 亮黄高亮） ============ */
+/* 还原 Counter-Strike 1.6 经典界面观感：深橄榄绿背景（图1 选项卡的暗绿）、菜单项文字的黄绿色
+   （图2 DEMO菜单 / BOT菜单 的亮黄绿）、选中项与 HUD 边框的亮黄；仅改配色，圆角保持 12/8/16 */
+[data-theme='cs16'] {
+  --bg: #4c5844; /* 外层背景 - 中度橄榄绿 */
+  --surface: #3e4637; /* 内层/面板底 - 深橄榄绿 */
+  --surface-2: #4a5440; /* 二级面板底 */
+  --surface-3: #565f48; /* 三级面板底（hover 态） */
+  --border: #5a6850; /* 边框 */
+  --border-strong: #6a7860; /* 强边框 */
+  --text: #e2e6db; /* 主文字 - 浅米白（CS 菜单文字色） */
+  --text-2: #b8beac; /* 次级文字 */
+  --text-3: #8a9080; /* 三级文字（弱化） */
+  --accent: #988632; /* 选中/高亮 - 橄榄黄（HUD 边框色） */
+  --accent-hover: #a89540;
+  --accent-weak: rgba(152, 134, 50, 0.18);
+  --accent-text: #1a2008; /* accent 底配深色文字，确保对比度 */
+  --danger: #e5565b;
+  --danger-weak: #3a1e22;
+  --ok: #b8d870; /* 成功色用 CS 调色板里的黄绿 */
+  --ok-weak: #2a331b;
+  --warn: #e3b341;
+  --mark-bg: #988632;
+  --mark-text: #1a2008;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 10px 32px rgba(0, 0, 0, 0.5);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 16px;
+  --sidebar-bg: #3a4530;
+  --titlebar-bg: #3e4637;
+  --btn-ghost-hover: #4a5440;
+  --scroll-thumb: #6a7860;
+  --input-bg: #3e4637;
+  color-scheme: dark;
+  /* 语义多色：在 CS 调色板上调整，保证导航/分类等控件仍可读 */
+  --c-blue: #6ab0e8;
+  --c-blue-weak: #1a3045;
+  --c-green: #b8d870;
+  --c-green-weak: #2a3520; /* 改用 CS 的黄绿色，避免与背景冲突 */
+  --c-orange: #e6973a;
+  --c-orange-weak: #3a2a10;
+  --c-purple: #b07be0;
+  --c-purple-weak: #2a1e40;
+  --c-teal: #8fd0a0;
+  --c-teal-weak: #1a3520;
+  --c-pink: #e06fa8;
+  --c-pink-weak: #3a1a2e;
+  --c-indigo: #a8a3e0;
+  --c-indigo-weak: #1e2040;
+  --bg-gradient: radial-gradient(900px 320px at 50% -12%, rgba(152, 134, 50, 0.06), transparent 60%), var(--bg);
+}
+
+[data-theme='wire'] .card,
+[data-theme='wire'] .btn,
+[data-theme='wire'] .input,
+[data-theme='wire'] .select,
+[data-theme='wire'] .badge,
+[data-theme='wire'] .chip {
+  border-width: 1.2px !important;
+}
+
+[data-theme='wire'] .btn-primary {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border: 1.2px solid var(--border-strong) !important;
+}
+
+[data-theme='wire'] img {
+  filter: grayscale(1);
+}
+
+[data-theme='wire'] .note-card {
+  background: var(--surface) !important;
+  border: 1.2px dashed var(--border-strong) !important;
+}
+
+/* ============ 黑白线框：全站实心色块 → 斜线填充 ============
+ * 需求「黑白线框主题不应有黑色色块，色块应为线框或斜线填充」。
+ * 以下选择器原本都是 `background: var(--accent|--text|--ok|--danger)` 的实心块，
+ * 在 wire 主题下 --accent/--ok/--danger 全被归一为墨色 #111，于是渲染成死黑色块。
+ * 统一改为 --fill-line（45° 斜线）+ 墨色描边，保持线框语汇一致、打印不吞墨。
+ *
+ * ★ 必须写在全局作用域 ★
+ *   [data-theme='wire'] 属性选择器放进组件 scoped 样式会在构建时被剥离，
+ *   导致彩色主题误走斜线（bars.css 文件头 / Beta.126 踩过的坑）。新增同类规则请加在此处。
+ * 文字一律用 var(--text)：斜线底为白，--accent-text（白）会不可见。 */
+[data-theme='wire'] .seg-btn.on,
+[data-theme='wire'] .tab.on,
+[data-theme='wire'] .et-tab.on,
+[data-theme='wire'] .btn-sm.on,
+[data-theme='wire'] .dd-option.on {
+  background: var(--fill-line);
+  color: var(--text);
+  border-color: var(--text) !important;
+}
+[data-theme='wire'] .switch.on {
+  background: var(--fill-line);
+  border: 1px solid var(--text);
+}
+/* 开关圆球为白色（--surface），落在斜线底上会"隐身"，故给墨色描边保住轮廓 */
+[data-theme='wire'] .switch.on .ball,
+[data-theme='wire'] .switch .ball {
+  background: var(--surface);
+  border: 1px solid var(--text);
+  box-shadow: none;
+}
+/* 开关键盘的另一实现（SharePanel 的 .slider，三条开关复用）：开态原为 --c-green 实心，
+ * wire 主题下 --c-green 亦为墨色 → 同样改斜线填充。轨道与圆球都补墨线保形。 */
+[data-theme='wire'] .switch input:checked + .slider {
+  background: var(--fill-line);
+  border: 1px solid var(--text);
+}
+[data-theme='wire'] .slider {
+  background: var(--surface);
+  border: 1px solid var(--text);
+}
+[data-theme='wire'] .slider::before {
+  background: var(--surface);
+  border: 1px solid var(--text);
+  box-shadow: none;
+}
+/* 进度条 / 占比条填充：斜线而非实心条。
+ * 三元素（.pg-fill 导入进度 / .cat-fill 首页待整理 / .h-fill 大区页分类分布）均为
+ * 组件 scoped 样式（背景 var(--accent)），需 !important 才能压过 data-v 特异性。 */
+[data-theme='wire'] .pg-fill,
+[data-theme='wire'] .cat-fill,
+[data-theme='wire'] .h-fill {
+  background: var(--fill-line) !important;
+  border: 1px solid var(--text);
+}
+/* 小徽标（含「导入」「拷贝」标识）：斜线填充 + 墨边，文字转墨色 */
+[data-theme='wire'] .badge-imp,
+[data-theme='wire'] .badge-copy {
+  background: var(--fill-line) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--text);
+}
+/* 选中页签内的计数徽标：原为半透明白底（衬实心主题色），斜线底上会糊成一团 → 回归墨线小圆角 */
+[data-theme='wire'] .tab.on .badge {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--text);
+}
+/* 方形品牌/头像/门禁标识：实心墨块改描边 + 斜线 */
+[data-theme='wire'] .brand .logo,
+[data-theme='wire'] .gate-logo,
+[data-theme='wire'] .bg-ic {
+  background: var(--fill-line);
+  color: var(--text);
+  border: 1px solid var(--text);
+}
+
+/* 打印：隐藏操作件，仅保留内容结构 */
+@media print {
+  .titlebar,
+  .sidebar,
+  .no-print,
+  .toast-wrap,
+  .modal-mask {
+    display: none !important;
+  }
+  .main {
+    overflow: visible !important;
+  }
+  .app-shell {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: 1fr !important;
+    height: auto !important;
+  }
+  body,
+  .main {
+    background: #fff !important;
+  }
+}
+
+/* ============ CS1.6 控件覆盖：补强未覆盖的组件在 cs16 主题下的显色 ============
+ * cs16 主题块只提供基础变量；以下覆盖保证所有控件在 cs16 暗色背景下有合理对比度，
+ * 不再回退到 light 主题的浅色（白底）。与 wire 主题的 [data-theme='wire'] .x 覆盖并立。 */
+[data-theme='cs16'] .seg-btn {
+  background: var(--surface-2);
+  color: var(--text);
+}
+[data-theme='cs16'] .seg-btn:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+[data-theme='cs16'] .seg-btn.on {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+[data-theme='cs16'] .input,
+[data-theme='cs16'] .select,
+[data-theme='cs16'] textarea.input {
+  background: var(--input-bg);
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+/* ★ Beta.289：上面这条覆盖与 base.css 的 .input:focus 特异性打平（0-2-0），
+ *   themes.css 后加载而获胜，焦点边框变色被吞。此处按同特异性补回焦点态。
+ *   （已排查其余主题：wire 只改 border-width 不冲突，cs16 是唯一受害者） */
+[data-theme='cs16'] .input:focus,
+[data-theme='cs16'] .select:focus,
+[data-theme='cs16'] textarea.input:focus {
+  border-color: var(--accent);
+}
+[data-theme='cs16'] .input::placeholder {
+  color: var(--text-3);
+}
+[data-theme='cs16'] .dim,
+[data-theme='cs16'] .s-label,
+[data-theme='cs16'] .r-meta {
+  color: var(--text-2);
+}
+[data-theme='cs16'] .badge,
+[data-theme='cs16'] .chip {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+[data-theme='cs16'] .btn-ghost {
+  background: var(--surface-2);
+  color: var(--text);
+}
+[data-theme='cs16'] .btn-ghost:hover {
+  background: var(--surface-3);
+}
+[data-theme='cs16'] .btn {
+  color: var(--text);
+}
+[data-theme='cs16'] .btn-primary {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+[data-theme='cs16'] .btn-primary:hover {
+  background: var(--accent-hover);
+}
+[data-theme='cs16'] .modal-mask {
+  background: rgba(10, 14, 16, 0.7);
+}
+[data-theme='cs16'] .modal {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+}
+[data-theme='cs16'] .tab {
+  color: var(--text-2);
+}
+[data-theme='cs16'] .tab.on {
+  color: var(--accent-text);
+  border-color: var(--accent);
+}
+[data-theme='cs16'] a,
+[data-theme='cs16'] .link {
+  color: var(--accent);
+}
+[data-theme='cs16'] mark {
+  background: var(--mark-bg);
+  color: var(--mark-text);
+}
+[data-theme='cs16'] ::selection {
+  background: var(--accent-weak);
+  color: var(--accent-text);
+}
+[data-theme='cs16'] .err,
+[data-theme='cs16'] .danger-msg {
+  background: var(--danger-weak);
+  color: var(--danger);
+}
+[data-theme='cs16'] .ok-msg {
+  background: rgba(184, 216, 112, 0.15);
+  color: var(--ok);
+}
+[data-theme='cs16'] .warn-msg {
+  background: rgba(227, 179, 65, 0.12);
+  color: var(--warn);
+}
+[data-theme='cs16'] .tip-box {
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+}
+/* 导航选中态：提高文字对比度 + 取消左边指示条（用户确认） */
+[data-theme='cs16'] .nav-item.active {
+  background: rgba(152, 134, 50, 0.32);
+  color: var(--text);
+  font-weight: 600;
+}
+[data-theme='cs16'] .nav-item.active svg {
+  color: var(--text);
+}
+
+/* ============ 竹青主题：浅色调（柔和浅绿底 + 深森绿按钮） ============
+ * 配色表（6 色由浅至深）：#b5c9a4 / #a3b89e / #8a9e7a / #6e8b5e / #4a7a4c / #2f5a3d
+ * 最浅端作页面温和浅绿底（#a3b89e），最浅端面板作白底；最深绿作按钮/选中强调；
+ * 文字用近黑深森绿（#1c2e1f），按钮文字白色。整体明亮柔和，符合"宁静自然"调性。 */
+[data-theme='bamboo'] {
+  --bg: #f4f5f7; /* 外层 - 与 light 同款浅灰，降低大底与白卡对比度（Beta.101）*/
+  --surface: #ffffff; /* 面板底 - 纯白 */
+  --surface-2: #f1f6e8; /* 二级 - 极浅绿白 */
+  --surface-3: #e3ecd4; /* 三级 - 浅绿 */
+  --border: #b5c9a4; /* 边框 - 浅绿 */
+  --border-strong: #8a9e7a; /* 强边框 */
+  --text: #1c2e1f; /* 主文字 - 近黑深森绿 */
+  --text-2: #4a7a4c; /* 次级文字 */
+  --text-3: #6e8b5e; /* 三级文字 */
+  --accent: #2f5a3d; /* 强调色 - 最深森绿（HUD 边框色） */
+  --accent-hover: #234831;
+  --accent-weak: #d8e4cc; /* 弱底 - 淡绿 */
+  --accent-text: #ffffff; /* accent 底配白字 */
+  --danger: #e5484d;
+  --danger-weak: #fce8e8; /* 浅红（适配浅底场景） */
+  --ok: #2da44e;
+  --ok-weak: #e3f5e9;
+  --warn: #d29922;
+  --mark-bg: #988632;
+  --mark-text: #1a2008;
+  --shadow: 0 1px 3px rgba(28, 46, 31, 0.07), 0 1px 2px rgba(28, 46, 31, 0.04);
+  --shadow-lg: 0 10px 32px rgba(28, 46, 31, 0.14);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 16px;
+  --sidebar-bg: #f1f6e8; /* 侧栏 - 极浅绿白，保留主题识别（Beta.101）*/
+  --titlebar-bg: #ffffff;
+  /* 竹青：--btn-ghost-hover 改为 surface-3（浅绿），与侧栏底 #f1f6e8 拉开色差，
+   * 否则所有依赖该变量的 hover（导航项/标题栏按钮/工具栏）在侧栏上无反馈 */
+  --btn-ghost-hover: var(--surface-3);
+  --scroll-thumb: #b5c9a4;
+  --input-bg: #ffffff;
+  color-scheme: light;
+  /* 语义多色：复用 light 主题的取值（已为浅底设计），与绿底调和良好 */
+  --c-blue: #3b6df0;
+  --c-blue-weak: #eaf0ff;
+  --c-green: #2da44e;
+  --c-green-weak: #e7f6ec;
+  --c-orange: #d29922;
+  --c-orange-weak: #fdf3d8;
+  --c-purple: #8957e5;
+  --c-purple-weak: #f1e8ff;
+  --c-teal: #038387;
+  --c-teal-weak: #d8f3f3;
+  --c-pink: #db3a8c;
+  --c-pink-weak: #fde4f0;
+  --c-indigo: #5a5fd6;
+  --c-indigo-weak: #e7e8fc;
+  /* 页面渐变底：左侧淡绿径向 + 浅灰大底，保留「竹青」氛围但不抢白卡片（Beta.101）*/
+  --bg-gradient:
+    radial-gradient(900px 400px at 12% -5%, rgba(168, 184, 158, 0.35), transparent 60%),
+    radial-gradient(700px 500px at 95% 110%, rgba(216, 228, 204, 0.5), transparent 55%), var(--bg);
+}
+
+/* ============ 檀褐主题：浅色调（暖米侧栏 + 深焦褐按钮） ============
+ * 配色表（9 色由浅至深）：#f5e4d7 / #e2c8b1 / #d0b49f / #b79a7d / #a08063 / #8e6b4b / #7b5530 / #6a4624 / #59391e
+ * 最浅端作页面温和米色（#e2c8b1），最深焦褐作按钮强调；近黑深焦褐作文字；按钮文字白色。 */
+[data-theme='sandalwood'] {
+  --bg: #f4f5f7; /* 外层 - 与 light 同款浅灰（Beta.101）*/
+  --surface: #ffffff;
+  --surface-2: #faf3e8; /* 极浅米白 */
+  --surface-3: #f0e3d0; /* 浅米色 */
+  --border: #d0b49f;
+  --border-strong: #a08063;
+  --text: #2a1a0e; /* 主文字 - 近黑深焦褐 */
+  --text-2: #59391e;
+  --text-3: #7b5530;
+  --accent: #59391e; /* 强调色 - 最深焦褐 */
+  --accent-hover: #3d2715;
+  --accent-weak: #ead4be; /* 弱底 - 浅米 */
+  --accent-text: #ffffff;
+  --danger: #e5484d;
+  --danger-weak: #fce8e8;
+  --ok: #2da44e;
+  --ok-weak: #e3f5e9;
+  --warn: #d29922;
+  --mark-bg: #a08063;
+  --mark-text: #faf3e8;
+  --shadow: 0 1px 3px rgba(58, 41, 22, 0.07), 0 1px 2px rgba(58, 41, 22, 0.04);
+  --shadow-lg: 0 10px 32px rgba(58, 41, 22, 0.14);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 16px;
+  --sidebar-bg: #faf3e8; /* 侧栏 - 极浅米白（Beta.101）*/
+  --titlebar-bg: #ffffff;
+  /* 檀褐：--btn-ghost-hover 改为 surface-3（浅米），与侧栏底 #faf3e8 拉开色差 */
+  --btn-ghost-hover: var(--surface-3);
+  --scroll-thumb: #d0b49f;
+  --input-bg: #ffffff;
+  color-scheme: light;
+  --c-blue: #3b6df0;
+  --c-blue-weak: #eaf0ff;
+  --c-green: #2da44e;
+  --c-green-weak: #e7f6ec;
+  --c-orange: #d29922;
+  --c-orange-weak: #fdf3d8;
+  --c-purple: #8957e5;
+  --c-purple-weak: #f1e8ff;
+  --c-teal: #038387;
+  --c-teal-weak: #d8f3f3;
+  --c-pink: #db3a8c;
+  --c-pink-weak: #fde4f0;
+  --c-indigo: #5a5fd6;
+  --c-indigo-weak: #e7e8fc;
+  --bg-gradient:
+    radial-gradient(900px 400px at 12% -5%, rgba(226, 200, 177, 0.35), transparent 60%),
+    radial-gradient(700px 500px at 95% 110%, rgba(250, 243, 232, 0.55), transparent 55%), var(--bg);
+}
+
+/* ============ 青空主题：浅色调（薄荷侧栏 + 深藏蓝按钮） ============
+ * 配色表（5 色由浅至深）：#f7f9f2 / #e1f0e5 / #b0e0d3 / #5ab7d6 / #1e4d6c
+ * 第2浅薄荷作页面背景，最深藏蓝作按钮强调；近黑深藏蓝作文字；按钮文字白色。 */
+[data-theme='sky'] {
+  --bg: #f4f5f7; /* 外层 - 与 light 同款浅灰（Beta.101）*/
+  --surface: #ffffff;
+  --surface-2: #f3f8f4; /* 极浅薄荷 */
+  --surface-3: #dfece3; /* 浅薄荷 */
+  --border: #b0e0d3; /* 薄荷边 */
+  --border-strong: #5ab7d6;
+  --text: #0e1f2c; /* 主文字 - 近黑深藏蓝 */
+  --text-2: #1e4d6c;
+  --text-3: #4a7a8a;
+  --accent: #1e4d6c; /* 强调色 - 最深藏蓝 */
+  --accent-hover: #163e58;
+  --accent-weak: #cfe6e8; /* 弱底 - 淡天蓝 */
+  --accent-text: #ffffff;
+  --danger: #e5484d;
+  --danger-weak: #fce8e8;
+  --ok: #2da44e;
+  --ok-weak: #e3f5e9;
+  --warn: #d29922;
+  --mark-bg: #5ab7d6;
+  --mark-text: #0e1f2c;
+  --shadow: 0 1px 3px rgba(14, 31, 44, 0.07), 0 1px 2px rgba(14, 31, 44, 0.04);
+  --shadow-lg: 0 10px 32px rgba(14, 31, 44, 0.14);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 16px;
+  --sidebar-bg: #f3f8f4; /* 侧栏 - 极浅薄荷白（Beta.101）*/
+  --titlebar-bg: #ffffff;
+  /* 青空：--btn-ghost-hover 改为 surface-3（浅薄荷），与侧栏底 #f3f8f4 拉开色差 */
+  --btn-ghost-hover: var(--surface-3);
+  --scroll-thumb: #b0e0d3;
+  --input-bg: #ffffff;
+  color-scheme: light;
+  --c-blue: #3b6df0;
+  --c-blue-weak: #eaf0ff;
+  --c-green: #2da44e;
+  --c-green-weak: #e7f6ec;
+  --c-orange: #d29922;
+  --c-orange-weak: #fdf3d8;
+  --c-purple: #8957e5;
+  --c-purple-weak: #f1e8ff;
+  --c-teal: #038387;
+  --c-teal-weak: #d8f3f3;
+  --c-pink: #db3a8c;
+  --c-pink-weak: #fde4f0;
+  --c-indigo: #5a5fd6;
+  --c-indigo-weak: #e7e8fc;
+  --bg-gradient:
+    radial-gradient(900px 400px at 12% -5%, rgba(225, 240, 229, 0.5), transparent 60%),
+    radial-gradient(700px 500px at 95% 110%, rgba(176, 224, 211, 0.35), transparent 55%), var(--bg);
+}
+
+/* 竹青/檀褐/青空 三套主题的最小控件覆盖（浅色调适配版）：
+ * 主题块本身已正确提供 --bg/--surface/--accent/--text 等基础变量；
+ * 此处仅补充全局没有默认值的控件（.btn-ghost、.modal、::selection 等），并修正
+ * color-scheme 等元数据。重复的 .btn-primary/.input/.tab.on/.nav-item 等规则已移除——
+ * 它们要么与 base.css 默认一致，要么被组件 scoped 规则盖过，对浅色主题无意义。 */
+[data-theme='bamboo'],
+[data-theme='sandalwood'],
+[data-theme='sky'] {
+  color-scheme: light;
+}
+[data-theme='bamboo'] .seg-btn,
+[data-theme='sandalwood'] .seg-btn,
+[data-theme='sky'] .seg-btn {
+  background: var(--surface-2);
+  color: var(--text);
+}
+[data-theme='bamboo'] .seg-btn:hover,
+[data-theme='sandalwood'] .seg-btn:hover,
+[data-theme='sky'] .seg-btn:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+[data-theme='bamboo'] .seg-btn.on,
+[data-theme='sandalwood'] .seg-btn.on,
+[data-theme='sky'] .seg-btn.on {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+[data-theme='bamboo'] .s-label,
+[data-theme='sandalwood'] .s-label,
+[data-theme='sky'] .s-label,
+[data-theme='bamboo'] .r-meta,
+[data-theme='sandalwood'] .r-meta,
+[data-theme='sky'] .r-meta {
+  color: var(--text-2);
+}
+[data-theme='bamboo'] .badge,
+[data-theme='sandalwood'] .badge,
+[data-theme='sky'] .badge,
+[data-theme='bamboo'] .chip,
+[data-theme='sandalwood'] .chip,
+[data-theme='sky'] .chip {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+[data-theme='bamboo'] .btn-ghost,
+[data-theme='sandalwood'] .btn-ghost,
+[data-theme='sky'] .btn-ghost {
+  background: var(--surface-2);
+  color: var(--text);
+}
+[data-theme='bamboo'] .btn-ghost:hover,
+[data-theme='sandalwood'] .btn-ghost:hover,
+[data-theme='sky'] .btn-ghost:hover {
+  background: var(--surface-3);
+}
+[data-theme='bamboo'] .modal-mask,
+[data-theme='sandalwood'] .modal-mask,
+[data-theme='sky'] .modal-mask {
+  background: rgba(50, 80, 90, 0.4);
+}
+[data-theme='bamboo'] .modal,
+[data-theme='sandalwood'] .modal,
+[data-theme='sky'] .modal {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+}
+[data-theme='bamboo'] .tab,
+[data-theme='sandalwood'] .tab,
+[data-theme='sky'] .tab {
+  color: var(--text-2);
+}
+[data-theme='bamboo'] a,
+[data-theme='bamboo'] .link,
+[data-theme='sandalwood'] a,
+[data-theme='sandalwood'] .link,
+[data-theme='sky'] a,
+[data-theme='sky'] .link {
+  color: var(--accent);
+}
+[data-theme='bamboo'] mark,
+[data-theme='sandalwood'] mark,
+[data-theme='sky'] mark {
+  background: var(--mark-bg);
+  color: var(--mark-text);
+}
+[data-theme='bamboo'] ::selection,
+[data-theme='sandalwood'] ::selection,
+[data-theme='sky'] ::selection {
+  background: var(--accent-weak);
+  color: var(--text);
+}
+[data-theme='bamboo'] .err,
+[data-theme='bamboo'] .danger-msg,
+[data-theme='sandalwood'] .err,
+[data-theme='sandalwood'] .danger-msg,
+[data-theme='sky'] .err,
+[data-theme='sky'] .danger-msg {
+  background: var(--danger-weak);
+  color: var(--danger);
+}
+[data-theme='bamboo'] .ok-msg,
+[data-theme='sandalwood'] .ok-msg,
+[data-theme='sky'] .ok-msg {
+  background: var(--accent-weak);
+  color: var(--ok);
+}
+[data-theme='bamboo'] .warn-msg,
+[data-theme='sandalwood'] .warn-msg,
+[data-theme='sky'] .warn-msg {
+  background: rgba(227, 179, 65, 0.12);
+  color: var(--warn);
+}
+[data-theme='bamboo'] .tip-box,
+[data-theme='sandalwood'] .tip-box,
+[data-theme='sky'] .tip-box {
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+}
+
+/* 修复浅色调主题（竹青/檀褐/青空）的两处可读性问题：
+ * 1. 左下角用户区 hover 原用 --btn-ghost-hover，而这三个主题里该值与 --sidebar-bg 完全相同，
+ *    导致 hover 无反馈；改回 surface-3，与侧栏底拉开色差。
+ * 2. ::selection 原用 accent-text（白色）配 accent-weak（浅底），选中文字几乎消失；
+ *    改为 text（深色）保证可读。 */
+[data-theme='bamboo'] .sb-user:hover,
+[data-theme='sandalwood'] .sb-user:hover,
+[data-theme='sky'] .sb-user:hover {
+  background: var(--surface-3);
+}
+/* 搜索关键词高亮（mark）在竹青默认是深橄榄底+近黑字，对比不足；统一用浅色强调底+深色强调字 */
+[data-theme='bamboo'] mark,
+[data-theme='sandalwood'] mark,
+[data-theme='sky'] mark {
+  background: var(--accent-weak);
+  color: var(--accent);
+}
+
+/* ============ 半条命主题：深色调（中性近黑底 + Half-Life HEV 橙 #e8910c） ============
+ * 配色与荧光效果严格对齐 PlayCSOnline（https://playcsonline.com/）：
+ * 页面底 #0a0a0f；面板 rgba(16,16,28,0.92)/#1a1a1e；主橙 #e8910c（用户指定 HEV 橙）
+ * 辅以站点暗橙辉光 rgba(255,140,40,*) / rgba(246,166,35,*)；功能绿 #8bc34a、功能红 #ff6b6b；
+ * 文字 #e8e8e8 及 rgba(255,255,255,*) 灰阶。
+ * 沿用深色控件默认（base.css 按变量自适应）；hover / focus / active 以底色与强调色变化反馈，不再叠加橙色辉光。
+ * 同 dark 为深色调，无需额外控件覆盖（base.css 默认已按变量自适应）。 */
+[data-theme='halflife'] {
+  --bg: #0a0a0f; /* 站点页面底色 #0a0a0f */
+  --surface: #13131b; /* 面板底 - 站点暗面板 rgba(16,16,28,0.92) 落点 */
+  --surface-2: #1a1a1e; /* 二级面板 - 站点 #1a1a1e */
+  --surface-3: #232329; /* 三级面板（hover 态） */
+  --border: #5a4328; /* 边框 - 淡橙色线框 */
+  --border-strong: #7a5a34; /* 强边框 - 更亮淡橙 */
+  --text: #e8e8e8; /* 主文字 - 站点 #e8e8e8 */
+  --text-2: #b6b6c0; /* 次级文字 - 站点 rgba(255,255,255,0.5) 落点 */
+  --text-3: #80808c; /* 三级文字 - 站点 rgba(255,255,255,0.3) 落点 */
+  --accent: #e8910c; /* 强调 - 用户指定主橙 #e8910c（HEV 橙） */
+  --accent-hover: #f0a52e; /* 悬停提亮 - 更亮的橙 */
+  --accent-weak: #4a2f0e; /* 弱底 - 淡橙选中背景 rgba(232,145,12,0.18) 落点 */
+  --accent-text: #1a1206; /* accent 底配深色文字，确保对比度 */
+  --danger: #ff6b6b; /* 站点红 #ff6b6b */
+  --danger-weak: #3a1f22;
+  --ok: #8bc34a; /* 站点绿 #8bc34a */
+  --ok-weak: #23301a;
+  --warn: #f6a623; /* 站点深琥珀 #f6a623 */
+  --mark-bg: #4a3212;
+  --mark-text: #ffd9a0;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 10px 32px rgba(0, 0, 0, 0.55);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 16px;
+  --sidebar-bg: #0c0c12; /* 侧栏 - 近站点底色 */
+  --titlebar-bg: #13131b;
+  --btn-ghost-hover: #3a2a1a; /* 幽灵按钮悬停 - 淡橙底 */
+  --scroll-thumb: #6a5034; /* 滚动条 - 淡橙 */
+  --input-bg: #1a1a1e;
+  color-scheme: dark;
+  /* 语义多色：以主橙 #e8910c 为基调，绿取站点真实功能色，强化 Half-Life 识别 */
+  --c-blue: #e8910c;
+  --c-blue-weak: #4a2f0e;
+  --c-green: #8bc34a;
+  --c-green-weak: #243a14;
+  --c-orange: #e8910c;
+  --c-orange-weak: #4a2f0e;
+  --c-purple: #f6a623;
+  --c-purple-weak: #4a2f0e;
+  --c-teal: #f3a83a;
+  --c-teal-weak: #4a2f0e;
+  --c-pink: #ff9e6b;
+  --c-pink-weak: #3a211a;
+  --c-indigo: #e8910c;
+  --c-indigo-weak: #4a2f0e;
+  --bg-gradient: linear-gradient(180deg, #0a0a0f 0%, #0d0d15 50%, #0a0a0f 100%);
+}
+
+/* 首页 7 日柱状图（TrendChart / MiniBars）的线框斜线填充已移至 src/styles/bars.css
+ * （须在全局作用域，避免 scoped 属性选择器被构建工具剥离） */

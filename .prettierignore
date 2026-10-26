@@ -1,0 +1,11 @@
+dist/
+node_modules/
+release/
+archive/
+*.log
+.DS_Store
+
+# 字体产物：由 scripts/sync-fonts.mjs 从 @fontsource 包生成。
+# fonts.css 里的 unicode-range 是上游原样抽出的超长行，格式化只会把 511 条规则重排一遍，
+# 下次 --force 重新生成又变回去，徒增无意义 diff。
+public/fonts/

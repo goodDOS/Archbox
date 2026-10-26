@@ -1,0 +1,1654 @@
+/* ============ 基础样式与组件（WorkBuddy 风格：清爽卡片 / 圆角 / 细边框） ============ */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  /* 值来自 --font-ui，由 src/utils/fontStack.js 按「自带 / 系统」模式写入（见 useFontMode）。
+   * 这里不再写死字体栈：写死的话，设置里切换模式只会换到一半（正文变了、组件没变）。 */
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--text);
+  background: var(--bg-gradient);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  user-select: none;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ---------- 滚动条占位 ----------
+ * 目的：让【会滚动的容器】常驻滚动条槽位，滚动条出现/消失时不再改变内容盒宽度。
+ * 本项目的滚动条是 8px 实占宽度（上面三行 ::-webkit-scrollbar，仅此一处定义）：
+ * 滚动条一旦出现，内容盒就窄 8px —— 对【水平居中】的容器（门禁页卡片）表现为居中基准
+ * 左移 4px、内容左右跳动；对【左右布局】的容器表现为右边界内缩 8px。
+ *
+ * ★★ 为什么是一份显式清单，而不是 [class] / [class] * 这种属性选择器 ★★
+ *
+ * Beta.165 曾用：
+ *     [class], [class] * { scrollbar-gutter: stable; }
+ * 它在 Chromium 124 上造成了 P0 级回归 ——【全库 SVG 图标集体不绘制】。
+ * 根因：`[class] *` 是「后代通配」，会把 scrollbar-gutter: stable 设到
+ *       svg / path / circle / rect 这些元素身上（它们全都在带 class 的元素内部），
+ *       设上之后这些 SVG 元素不再被绘制。
+ * 实测（app 内真实渲染 + CDP 截图像素统计，bamboo 主题、关闭按钮 44×44 区域）：
+ *     全局规则生效  → 区域内图标像素 = 0        （图标消失）
+ *     规则压回 auto → 区域内图标像素 = 12       （图标恢复）
+ * 同一组件、同一主题、同一视口，唯一变量就是那条规则 —— 因果确凿。
+ * 注意：`[class]` 单独用（去掉 ` *`）同样不安全 —— <svg class="..."> 会被它直接命中。
+ * 也就是说，【任何靠属性存在性/通配符匹配的选择器都无法排除 SVG】，必须显式列举。
+ *
+ * 代价：新增滚动容器时要来这份清单登记一处；断言 S15/S16 会检查清单与真实滚动容器同步
+ * （漏登记即断言失败），所以不会静默漏掉。
+ *
+ * 【不要用 ::-webkit-scrollbar { display: none } 或 overflow: overlay 来「消除缩进」】
+ *   两者都已实测证伪：display:none 会让滚动条彻底消失（丢失「下方还有内容」的提示，
+ *   滚动仍生效属隐性交互）；overlay 在 Chromium 124 已并入 auto，仍占 8px。
+ *   断言 S41/S42 锁死这两种做法。
+ *
+ * 注：html/body/#app 是 overflow: hidden，无需列入；
+ *     .gate-card-wrap 也自带 scrollbar-gutter（见 components.css），此处不重复，避免双点定义。 */
+.main,
+.sidebar,
+.x-scroll,
+.sp-body,
+.sp-visitors,
+.sec-nav,
+.ls-rail,
+.sb-scroll,
+.wiz-body,
+.fl-body,
+.dd-popup,
+.audit-scroll,
+.runlog-box,
+.draft-list,
+.pv-scroll {
+  scrollbar-gutter: stable;
+}
+
+input,
+textarea,
+select,
+button {
+  font: inherit;
+  color: inherit;
+}
+
+/* ---------- 文本可选/可复制（Beta.169 需求 3）----------
+ *
+ * 背景：body 上的全局 user-select:none 是 v1 起就有的（防拖拽误选、让窗口手感像
+ * 原生应用而非网页）。但它把【正文、元数据、日志、表格】一并锁死了 —— 用户没法
+ * 复制文档正文，也没法选中地址/令牌/错误信息。需求 3 就是要求把这层锁按语义放开。
+ *
+ * ★ 为什么必须是一份【显式容器清单】，而不是 * { user-select: text } ★
+ * 与同文件 .main/.sidebar 那份 scrollbar-gutter 清单（见上方大段注释）完全同源：
+ * 通配符/属性选择器会命中 svg / path / circle / rect，在 Chromium 124 上直接
+ * 导致 SVG 不再绘制（Beta.167 的 P0 回归）。本项目已用同一套结论两次 ——
+ * 【凡是"想一网打尽"的选择器，都必须显式列举，绝不写通配】。
+ *
+ * ★ 为什么第二组还要把交互控件【显式收回 none】★
+ * 放开容器 = 容器内所有后代继承 text，这会把按钮文字、导航项、下拉选项一起放开：
+ * 点一下按钮就留下一片蓝色选区，拖一下就把「保存」选中了，观感立刻退化成网页。
+ * 所以放开的同时必须把这些控件收回来 —— 它们本来就是容器清单的下游，只能显式覆盖。
+ *
+ * 下面两组来自对全库的实测扫描（剥注释后提取所有含 cursor:pointer 的规则块，
+ * 共 55 个选择器），不是凭印象罗列：
+ *   · 放开组 = 内容型容器（正文、编辑器、表格、列表、日志、元数据行）
+ *   · 收回组 = 交互型选择器（按钮、导航、标签页、下拉项、开关、整卡可点区域）
+ * 断言 S2/S3/S4 会校验这两组与源码实际类名同步（漏登记即失败），不会静默漂移。
+ */
+.content-selectable,
+.post-content,
+.editor-area,
+.ProseMirror,
+.code-area,
+.preview-body,
+.pv-body,
+.pv-head,
+.pv-title,
+.pv-meta,
+.pv-note,
+.log-line,
+.audit-scroll,
+.runlog-box,
+.tbl,
+.meta-row,
+.ver-info,
+.dim,
+.code,
+.chip,
+.badge,
+.mark,
+.fp-val,
+.author-link,
+.pc-title,
+.draft-item-title,
+.draft-item-meta,
+.home-stat-val,
+.stat-num,
+.ls-ip,
+.sp-v,
+.lan-tip,
+/* ★ Beta.172 需求 5：文档标题需要可选可复制（用户要把标题原文复制出去）。
+ * 只登记 .title-selectable 这一个语义类，**不写 `.page-head h1`** ——
+ * 同一条 .page-head 在编辑模式下是「编辑文档 / 新建文档」，那是界面文案不该被选中，
+ * 后代选择器没法把"文档标题"与"界面标题"区分开。
+ * 登记点仅 PostView.vue 查看模式的 <h1>（编辑模式那个 <h1> 不带此类）。 */
+.title-selectable {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* 收回组：控件与"整块可点"区域一律保持不可选，
+ * 否则点击会留下选区、拖拽会误选按钮文字（拖动窗口标题栏同理会带出选区）。 */
+button,
+.btn,
+.tb-btn,
+.btn-guide,
+.win-btn,
+.nav-item,
+.sec-nav-item,
+.seg-btn,
+.et-tab,
+.modal-close,
+.ca-close,
+.pwd-eye,
+.fb-btn,
+.fb-case,
+.back-top,
+.dd-trigger,
+.dd-option,
+.switch,
+.slider,
+.pc,
+.pc-author,
+.r-item,
+.draft-item,
+.draft-toggle,
+.stats-head,
+.theme-card,
+.src-head,
+.src-region,
+.sp-region,
+.sp-ico,
+.sp-link,
+.sp-update,
+.sp-x,
+.sh-chip,
+.sh-clear,
+.ls-refresh,
+.user-row,
+.row-click,
+.sb-user,
+.sb-filter-add,
+.sb-filter-clear,
+.note-add,
+.note-del,
+.chip .x,
+.fp-item,
+.skip-toggle,
+.tip a,
+.dim a,
+.dup-target a,
+.author-link.act {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* 图片：可选择（Chromium 下 img 被选中即可走「复制图片」），
+ * 但要禁掉原生拖拽 —— 拖图会在 Electron 里起一个拖拽会话，
+ * 稍有不慎就把 data: URI 拖成外部文件，且拖拽期间鼠标指针一直显示禁止状态。 */
+img {
+  user-select: text;
+  -webkit-user-drag: none;
+}
+
+input,
+textarea {
+  user-select: text;
+}
+
+/* ★ Beta.291：原生控件强调色跟随主题。
+ *   原生 <input type=date> 的日历弹层（选中日/今天高亮）、checkbox/radio/range/progress
+ *   等取 accent-color 绘制，不设则一律 Chromium 默认蓝，暗色主题（如 CS1.6）下突兀。
+ *   日历弹层的底色只能由 color-scheme 控明暗（各主题均已设置），内部配色无法用 CSS
+ *   变量重绘 —— 这是平台边界，accent-color 已是能覆盖的最大范围。 */
+input,
+select,
+textarea,
+button {
+  accent-color: var(--accent);
+}
+
+/* ---------- 布局 ---------- */
+.app-shell {
+  display: grid;
+  height: 100vh;
+  grid-template-areas: 'tb tb' 'sb main';
+  grid-template-rows: 44px 1fr;
+  grid-template-columns: 236px 1fr; /* 侧栏固定宽 236px，无 JS 设置点，故用字面量 */
+  /* ★ Beta.288：首次启动（boot 屏 → 主界面）时内容渐显。
+   *   boot 屏与 .app-shell 是 v-if/v-else 瞬时切换，给后者挂入场动画即可
+   *   让主界面从透明淡入，取代「啪一下跳出来」的生硬。
+   *   ★ Beta.297：不能用 fill-mode: both —— both 会让动画永久保持「生效中」状态，
+   *   Chromium 据此维持特殊合成状态，内部被提升的子层会逃出遮罩 backdrop-filter
+   *   的采样范围，弹窗背后部分文字不被模糊、像浮在高一层。此处 to 态（opacity:1）
+   *   就是元素自然状态，动画立即开始也无闪烁，fill 留默认 none 即可。 */
+  animation: app-fade-in 0.36s ease-out;
+}
+@keyframes app-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.main {
+  grid-area: main;
+  overflow-y: auto;
+  padding: 20px 24px 40px;
+  min-width: 0;
+  /* 吸顶页头高度：定义在共同祖先 .main 上，供页头自身与右侧「历史版本」侧栏共用。
+   *   若定义在 .page-head.sticky-head 上，.versions 是它的兄弟（不在其后代树内），
+   *   CSS 变量不继承 —— 侧栏取不到值会 fallback，两处又脱节。
+   *   ★ Beta.248 由 51 改为 43：页头的 padding-bottom 从 10px 收到 2px，
+   *     目的是让页头底部分割线与左侧导航栏图标行的分割线（.nav-toolbar）对齐 ——
+   *     两条线原本相差 8px，右侧明显低一截，看起来像"没对齐"。
+   *   ★ Beta.251：padding 改为 11/11 对称后，本值仍为 43px ——
+   *     它 = 内容高 32 + 下 padding 11（上 padding 由 sticky 抵消，不计入可见高度之外）；
+   *     旧式"内边距 8 + 行高 32 + 内边距 2 + border 1"是 20/2 时代的写法，已作废。
+   *     栏体可见高恒为 55px（= 11 + 32 + 11 + 1），未随本次改动变化。 */
+  --sticky-head-h: 43px;
+  /* 卡片之间的统一间距。定义在 .main 上而不是只写在 .card-stack 里，
+   *   是因为「页头 ↔ 首卡」这段间距不归 .card-stack 管（页头不是它的子元素），
+   *   而两处数值必须相等，故提升为共同祖先上的单一数据源。 */
+  --card-gap: 16px;
+  /* 历史版本侧栏吸附（sticky）时让开的距离。
+   *
+   * 【为什么不能心算】sticky 的 top 相对滚动容器的 **padding box** 解析，
+   *   而 .main 有 padding-top:20px —— padding box 顶在容器顶下方 20px 处。
+   *   早期写过 51+16=67px 这种"想当然的加法"，结果元素在**静止态**就被多推 8px，
+   *   看上去像"版本栏没跟正文卡片对齐"。
+   *   （页头自己写 top:-20px 正是为了抵消这 20px，同一个道理。）
+   *
+   * 【必须同时满足两个状态】这个值有两个约束，取交集才有唯一解：
+   *   ① 静止态（未滚动）：值取得过大，会把版本栏从自然位置往下推 —— 实测临界在 50px，
+   *      从 52px 起每 +1px 就多出 1px 空隙。
+   *   ② 吸附态（滚动后）：版本栏吸在 top 线上，实测 gap = top − 35，
+   *      要得到 16px 的间距，top 必须**恰好** 51px。
+   *   两者交集 → 唯一解 51px。这是算出来的，不是试出来的：
+   *     静止 51px→16/16 ✓  52px→17/17  53px→18/18 …
+   *   ★ Beta.251 修正：页头 padding-top 由 20px 改为 11px **不影响本值**，仍是 51px。
+   *     踩过的坑：当时按"55 − padding-top(11) + 16 = 60"心算改成 60px，结果静止态
+   *     版本栏被下推 9px（实测 gap 25），与正文首卡明显错位。
+   *     错因是把"页头自己的 padding-top"和"吸附基准用的 .main padding-top(20px)"混为一谈 ——
+   *     前者只影响页头内容排版，后者才是 sticky 换算的基准，两者互不相干。
+   *     ★ 教训：--sticky-rail-top 的换算基准是 **.main 的 padding-top(20px)**（恒定），
+   *       与页头自身的 padding 无关；页头 padding 变化**不需要**改本值。
+   *       实测关系：静止态 gap = 本值 − 35。
+   *
+   * 【历史教训】上一版的注释写「0~64px 全部恒定 115，无临界点」，那是**错的** ——
+   *   扫参时历史版本面板是折叠的（.versions 不在 DOM 里），读到的 verTop 是别的节点，
+   *   于是得出一条与实际无关的"安全区"。真实临界点就在 50px 附近。
+   *   ★ 教训：扫参前必须先确认被测节点真的存在（v-if 为真），否则得到的是假数据。
+   *   ★ 将来若调整**页头可见高度(55px)** 或 --card-gap(16px)，这个值要重新扫参确认。 */
+  --sticky-rail-top: 51px;
+}
+
+/* ---------- 标题栏皮肤（主界面 .titlebar 与门禁页 .gate-titlebar 共用） ----------
+ * ★ 层职责：本层只管「长相」（高度 / 底色 / 下边线 / 拖拽 / 左内距 / 按钮高度），
+ *   不管「定位」。定位由各自的类单独声明：
+ *     .titlebar      → grid-area: tb      （.app-shell 栅格的槽位）
+ *     .gate-titlebar → flex-shrink: 0     （门禁页 flex 列的首项）
+ *   这样「视觉契约」只有一份，改一处即两处生效，不存在漂移可能。
+ *
+ * 【为什么必须拆开】.titlebar 曾把 grid-area 与外观写在同一条规则里，
+ * 于是门禁页无法复用（grid-area 在非栅格父级下静默失效 → 看着像对的但完全错位），
+ * 只能把外观逐字复制一份到 components.css 的 .gate-titlebar，靠双份注释互相指路 +
+ * 断言 + 探针实测来防漂移 —— 那是妥协，不是设计。
+ *
+ * ★ 必须 box-sizing: border-box ★
+ * 主界面栅格行高固定 44px（.app-shell 的 grid-template-rows），若不声明 border-box，
+ * content-box 语义下总高 = 内容 44px + 下边框 1px = 45px，**超出槽位 1px**。
+ * 溢出的那 1px 正好把 border-bottom 让给了子元素：.win-btn 是 44×44 的整块，
+ * 背景绘制在边框之上，于是「窗口控制按钮 hover 时，色块盖住标题栏下方的分隔线」
+ * ——正是用户上报的现象（尤其 maximize 按钮 hover 最明显）。
+ * border-box 下 44px 含边框 → 内容区 43px，总量恰好等于槽位，不再溢出。 */
+.titlebar-skin {
+  box-sizing: border-box;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--titlebar-bg);
+  border-bottom: 1px solid var(--border);
+  -webkit-app-region: drag;
+  padding-left: 12px;
+}
+/* 按钮高度不参与撑高：高度收敛为「槽位 44px − 下边框 1px = 43px」，与内容区等高的同时
+ * 保证背景块不会越过那条边框线。宽度仍为 44px（点击热区横向下不受影响）。 */
+.titlebar-skin .win-btn {
+  height: 43px;
+}
+/* no-drag 豁免：与 .titlebar-skin 同源，故两处标题栏下的交互元素一并生效。
+ * 主界面品牌区是 cursor:default 的可点区域，门禁页品牌区无交互元素 —— 均无副作用。 */
+.titlebar-skin .no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* ---------- 标题栏（仅主界面）----------
+ * 定位层：只声明栅格槽位，外观全部继承 .titlebar-skin。
+ * 标记写法：<header class="titlebar titlebar-skin"> */
+.titlebar {
+  grid-area: tb;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+.brand .logo {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: var(--accent-text);
+}
+.brand .ver {
+  font-size: 11px;
+  color: var(--text-3);
+  font-weight: 400;
+}
+.tb-spacer {
+  flex: 1;
+}
+.win-btn {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-2);
+}
+.win-btn:hover {
+  background: var(--btn-ghost-hover);
+}
+.win-btn.close:hover {
+  background: var(--danger);
+  color: var(--accent-text);
+}
+
+/* ---------- 侧边栏 ---------- */
+.sidebar {
+  grid-area: sb;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 10px 10px 12px;
+  overflow-y: auto;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--text-2);
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+}
+.nav-item:hover {
+  background: var(--btn-ghost-hover);
+  color: var(--text);
+}
+.nav-item.active {
+  background: var(--accent-weak);
+  color: var(--accent);
+  font-weight: 600;
+}
+.nav-item.active svg {
+  color: var(--accent);
+}
+/* Beta.101：移除 .nav-item.c-*.active 硬编码多色，激活态统一用主题 --accent；
+ * 此前 .c-blue/.c-teal/.c-purple/.c-green 在 light/dark 等主题下会让"所有文档"等高亮
+ * 强制显示固定蓝/紫/绿，与主题无关。现在侧栏主导航激活态完全跟随主题强调色。 */
+/* 黑白线框主题的激活项用 45° 斜线填充，而非实心墨块（--accent 在本主题 = #111）。
+ * 文字保持 --text（墨色）而非 --accent-text：斜线底是白的，白字会看不见。 */
+[data-theme='wire'] .nav-item.active {
+  background: var(--fill-line);
+  color: var(--text);
+  border: 1px solid var(--text);
+}
+[data-theme='wire'] .nav-item.active svg {
+  color: var(--text);
+}
+.nav-item svg {
+  flex: none;
+  align-self: center;
+}
+/* 文字 span 的 line-height 收紧到 1，避免与 SVG 几何中心算法差异造成视觉错位 */
+.nav-item > span {
+  line-height: 1;
+}
+.nav-item .cnt {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-3);
+}
+.sb-title {
+  font-size: 11px;
+  color: var(--text-3);
+  padding: 12px 10px 6px;
+  letter-spacing: 0.05em;
+}
+.sb-user {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-top: 1px solid var(--border);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: background 0.12s ease;
+}
+.sb-user:hover {
+  background: var(--btn-ghost-hover);
+}
+/* 圆形头像：全项目唯一来源（4 处复用：侧栏用户区 / 登录与找回页账户行 /
+ * 关于页作者）。尺寸走 --av，默认 30px；flex: none 必须保留 —— 缺了它在
+ * flex 行里会被长文字挤压变形（登录页曾因组件内自写副本漏了这条而出问题）。 */
+.avatar {
+  --av: 30px;
+  width: var(--av);
+  height: var(--av);
+  border-radius: 50%;
+  flex: none;
+  display: grid;
+  place-items: center;
+  font-size: calc(var(--av) * 0.43);
+  font-weight: 600;
+  background: var(--accent-weak);
+  color: var(--accent);
+}
+.sb-user .info b {
+  display: block;
+  font-size: 13px;
+}
+.sb-user .info i {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+/* ---------- 通用组件 ---------- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+/* 卡片垂直堆叠时的统一间距：给容器加 .card-stack 即可
+   仅作用于直接相邻的 .card 子元素——不用全局 .card + .card，
+   否则会误伤 grid/网格内的卡片（如文档卡片墙的 grid-2），造成行间距错乱。
+   ★ 数值来自 .main 上的 --card-gap（页面级单一数据源）：
+     吸顶页头与首卡之间的间距、右侧历史版本栏的吸附线都按同一个值计算，
+     若这里另写一个字面量，将来只改一处就会出现「首卡 16px、后续卡 20px」的错位。 */
+.card-stack {
+  --card-gap: 16px;
+}
+.card-stack > .card + .card {
+  margin-top: var(--card-gap);
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+  /* hover 渐变反馈。transform 只做位移，不碰会触发重排的属性；
+     （Beta.289：应用户要求移除按下微缩动画） */
+  transition:
+    background 0.12s,
+    border-color 0.12s,
+    box-shadow 0.12s;
+  white-space: nowrap;
+}
+.btn:hover {
+  background: var(--btn-ghost-hover);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+  font-weight: 500;
+}
+.btn-primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+[data-theme='wire'] .btn-primary:hover {
+  background: var(--fill-line);
+  color: var(--text);
+}
+.btn-danger {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+.btn-danger:hover {
+  background: var(--danger-weak);
+}
+.btn-sm {
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: var(--radius-sm);
+}
+.input,
+.select,
+textarea.input {
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  outline: none;
+  width: 100%;
+  transition: border-color 0.12s;
+}
+/* ★ 输入框焦点态：只换边框颜色，不画外扩辉光（Beta.285 用户决定：去除所有辉光效果）
+ *
+ * 去掉的是原来这句：
+ *     box-shadow: 0 0 0 3px var(--accent-weak);
+ *
+ * 为什么删，而不是继续修缓冲：
+ *   box-shadow 不参与布局、画在边框盒之外，祖先里任何一个 overflow:hidden
+ *   都会把它切平。项目里弹窗、卡片、滚动区大量使用 overflow:hidden，
+ *   于是「给每个容器留够余量」变成一场打地鼠：留了 4px，换个更窄的容器又不够；
+ *   为某个组件加了内缩，又和同级块左沿对不齐（用户已两次反馈）。
+ *   边框变色同样能表达焦点，且**完全在盒内、任何 overflow 都裁不到**，
+ *   从根上消除这一类问题，也不再需要任何"为辉光预留的空间"。
+ *
+ * 可访问性没有削弱：焦点仍然有可见指示（边框由 --border 变 --accent），
+ * 对比度足够；input 本身还有光标与 placeholder 消失作为辅助提示。 */
+.input:focus,
+.select:focus {
+  border-color: var(--accent);
+}
+/* 全局美化原生 <select>：appearance:none 移除原生箭头 + 背景渐变自绘三角箭头（不依赖 SVG/字体） */
+.select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 28px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--text-2) 50%),
+    linear-gradient(135deg, var(--text-2) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) 50%,
+    calc(100% - 9px) 50%;
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+}
+select option,
+select optgroup {
+  background: var(--surface);
+  color: var(--text);
+}
+/* 复选/单选：勾选态用主题 accent 色 */
+input[type='checkbox'],
+input[type='radio'] {
+  accent-color: var(--accent);
+}
+.input::placeholder {
+  color: var(--text-3);
+}
+label.field-label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-2);
+  margin: 12px 0 5px;
+}
+/* 必填星号：全库唯一的 .req 定义，刻意【不限定祖先】。
+ * 曾经写作 `label.field-label .req`，只覆盖「label.field-label 的后代」—— 而全库 16 处 .req 里
+ * 有 2 处不在该结构内，于是它们既拿不到红色、也拿不到 2px 间距，静默继承父级文字色：
+ *   · UserGate.vue    :46  <div class="sec-qa-title">安全问答…<span class="req">*</span></div>  → 继承 var(--text) 深色
+ *   · FieldRenderer.vue:15 <label class="fp-item">…<span class="req">*</span></label>          → 继承 var(--text-2) 灰
+ * （实测证据：探针 R2/R3 —— 修复前两处为 rgb(28,35,51)，修复后为 rgb(229,72,77)；
+ *   R6 反向对照用不带 class 的裸 span 验证同位置仍为 rgb(28,35,51)，证明红色确由本规则带来。）
+ * 放宽为 .req 后两处同时归位。特异性仍是 (0,1,0)，不升 —— 故组件内若再写 scoped .req，
+ * scoped 的 (0,2,0) 依旧会赢；组件内因此【不得】重复定义本类（断言 S56 锁死）。
+ * 代价：.req 成为全库保留类名，今后任何位置用 .req 都会是红色 —— 这正是「必填标记」该有的语义。 */
+.req {
+  color: var(--danger);
+  margin-left: 2px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  font-size: 11px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+.badge.acc {
+  background: var(--c-blue-weak);
+  color: var(--c-blue);
+  border-color: transparent;
+}
+.badge.ok {
+  background: var(--c-green-weak);
+  color: var(--c-green);
+  border-color: transparent;
+}
+.badge.warn {
+  background: var(--c-orange-weak);
+  color: var(--c-orange);
+  border-color: transparent;
+}
+.badge.info {
+  background: var(--c-teal-weak);
+  color: var(--c-teal);
+  border-color: transparent;
+}
+.badge.danger {
+  background: var(--danger-weak);
+  color: var(--danger);
+  border-color: transparent;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 12px;
+  border: 1px solid transparent;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease,
+    border-color 0.12s ease;
+}
+.chip .x {
+  cursor: pointer;
+  font-weight: 700;
+}
+.chip .x:hover {
+  color: var(--danger);
+}
+
+/* 高亮语言（Beta.324 起三处同一份）：列表关键词 .mark（PostCard 搜索）、
+   查看态正文查找 .pf-hit（postFind）、编辑态正文查找 .pf-hit（editorFind 装饰）。
+
+   ★ 为什么必须半透明 + 不许外扩环（用户报「不透明大色块」）★
+ *  原先 .pf-hit / .fo-hit 用**实心** --mark-bg、active 用实心 --accent，
+ *  且都带 box-shadow: 0 0 0 1px（同色向外扩 1px）。两个后果：
+ *    ① 遮字 —— .fo-hit 是画在 <input> 之上的覆盖层（输入框自己的文字在下面画），
+ *       实心底色把字整个盖住，用户原话「不透明大色块」；
+ *    ② 连片 —— 1px 外扩让相邻命中（如搜 "e"）首尾相接，糊成一大块。
+ *  现在统一 color-mix 半透明（Electron 30 / Chromium 124 起支持），
+ *  文字从底色透出来；外扩环全部拆除。
+ *  active 与 inactive 的区分**不能只靠换色**：cs16 主题的 accent 与 mark-bg
+ *  同为 #988632，换色等于没换。故补不依赖色相的线索 —— 正文用下划线，
+ *  覆盖层（无自身文字）用 inset 描边：画在盒内，不外扩、不连片。 */
+.mark,
+.pf-hit {
+  background: color-mix(in srgb, var(--mark-bg) 62%, transparent);
+  color: var(--mark-text);
+  border-radius: 2px;
+}
+.pf-hit.pf-hit-active {
+  background: color-mix(in srgb, var(--accent) 66%, transparent);
+  color: var(--accent-text);
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+}
+
+/* 编辑态输入框的命中覆盖层（src/utils/findOverlay.js，Beta.316）。
+ *
+ * 为什么必须单独一套而不是复用 .pf-hit：那一套是给真实 DOM 文本节点用的
+ * （包 <mark>），而这里是一层浮在 <input>/<textarea> 之上的镜像 div。
+ * 两者配色口径保持一致，但覆盖层要额外满足三条：
+ *   ① 绝不接收鼠标事件 —— 否则会挡住用户点进输入框改字；
+ *   ② 必须能盖住控件自身的文字（z-index 高于控件），但低于弹层；
+ *   ③ 命中块用 inline 背景色，字体度量与控件完全一致（由 JS 复制 computed style）。
+ * 配色只引用主题变量，切主题自动跟随，不写死颜色。
+ *
+ * ★ Beta.324：底色改半透明、拆掉外扩环 ★
+ *   这层的文字是**输入框自己画在下面**的（.fo-layer 整体 color:transparent），
+ *   实心背景会把字盖住 —— 用户报的「不透明大色块」。半透明后文字透出。
+ *   active 的 inset 描边画在盒内：既标识当前项，又不向外扩 1px 与相邻命中连片。
+ *   （cs16 主题 accent==mark-bg，没有这道描边就分不出当前项。） */
+.fo-layer {
+  position: absolute;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
+  color: transparent; /* 只画背景，文字由控件自己渲染，避免重影 */
+  /* ★ white-space / overflow-wrap 不在这里定死：
+     单行 <input> 与多行 <textarea> 的折行规则不同，由 findOverlay.js 的
+     mirrorStyle() 按控件类型逐个写入内联样式（input 强制 pre，textarea 复制 pre-wrap）。
+     在此写死 pre-wrap 会让超长标题在镜像层折成两行、高亮整体错位。 */
+  border-style: solid;
+  border-color: transparent;
+  border-radius: var(--radius-sm);
+  line-height: inherit;
+}
+.fo-scroller {
+  display: block;
+  white-space: inherit;
+  overflow-wrap: inherit;
+  will-change: transform;
+}
+.fo-hit {
+  background: color-mix(in srgb, var(--mark-bg) 55%, transparent);
+  color: transparent;
+  border-radius: 2px;
+}
+.fo-hit.fo-hit-active {
+  background: color-mix(in srgb, var(--accent) 66%, transparent);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+
+table.tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.tbl th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-2);
+  font-size: 12px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.tbl td {
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.tbl tr:hover td {
+  background: var(--surface-2);
+}
+
+.empty {
+  text-align: center;
+  color: var(--text-3);
+  padding: 40px 0;
+  font-size: 13px;
+}
+
+/* 横向滚动容器：窄窗口下包裹表格，避免列被挤压换行（与 .audit-scroll/.pv-scroll 同思路） */
+.x-scroll {
+  overflow-x: auto;
+}
+.x-scroll > .tbl {
+  min-width: 560px;
+}
+
+/* ---------- 弹窗 ---------- */
+
+/* ============ 遮罩层：变暗 + 模糊 + 入退场动画（Beta.286） ============
+ *
+ * 【为什么不再只是"变暗"】
+ *   纯半透明黑把背景压暗了，但底下的文字、卡片边缘仍然清晰可辨，
+ *   眼睛会自动去读那些内容，导致弹窗"沉不下去"。加一层模糊后，
+ *   背景退成色块，焦点自然落到弹窗上 —— 这是 Apple / macOS 一直用的做法。
+ *
+ * 【为什么 blur 写成变量】
+ *   backdrop-filter 的代价与半径成正比。八套主题里线框（wire）主题的遮罩是
+ *   80% 白，背景本来就几乎看不见，再叠 10px 模糊纯属白烧 GPU；
+ *   而暗黑主题背景细节多，需要更实的模糊。所以半径交给主题变量，基础样值给 10px。
+ *
+ * ★ 【必须知道的两个渲染特性，改这块前务必读】
+ *   ① backdrop-filter 只会"取"它身后的东西 —— 前提是祖先链上不能有
+ *      filter / opacity / transform 之类的合成属性，否则会被拉进独立的
+ *      合成层，模糊对象变成"已经栅格化的兄弟节点"，表现为模糊失效或糊成一块。
+ *      本遮罩是 #app 的直接子节点（position:fixed + inset:0），祖先只有 body/#app，
+ *      两者都不带这些属性 —— 这是它能正常工作的前提，不要往 body/#app 上加 filter。
+ *   ② 遮罩**自身**不做 opacity 过渡，只过渡 background-color。
+ *      给带 backdrop-filter 的元素做 opacity 动画，Chromium 会逐帧重新计算
+ *      背景模糊，1080p 下能掉到 20fps，而且中途会出现"模糊先到位、暗度还没上去"的割裂感。
+ *      用 background-color 过渡既便宜又线性，视觉上就是"慢慢暗下去、同时慢慢糊起来"。
+ *
+ * 【动画口径】
+ *   入场 .18s / 退场 .14s（退场略快：用户点关闭后不想等）。
+ *   入场走 CSS animation，退场无法走 —— 组件卸载是瞬时发生的，
+ *   动画没机会播完元素就没了。退场由 JS 在卸载前插 `.is-leaving`，
+ *   等 animationend / 超时兜底后再真正移除，见 Modal.vue 与 SharePanel.vue。
+ *   没有 JS 兜底时（例如直接 v-if 掉），元素直接消失，**仍是可用的**，
+ *   只是没有退场动画 —— 这是刻意留的安全网。
+ */
+/* 遮罩的**外观**（层级/暗度/模糊/动画）三处共用：弹窗、侧滑抽屉之外的看图器也要它。
+ * ★ Beta.322：把外观与布局拆开 ★
+ *   外观对三者相同，布局不同：弹窗用 grid 居中（卡片），看图器必须 block 铺满。
+ *   原先外观和 grid 混在 .modal-mask 一条规则里，看图器借用时只能整条继承，
+ *   于是连 grid 居中一起继承 —— 这正是「关闭按钮位置错误」的根因。
+ */
+.modal-mask,
+.iv-mask {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 20, 30, 0.45);
+  z-index: var(--z-modal);
+  -webkit-backdrop-filter: blur(var(--mask-blur));
+  backdrop-filter: blur(var(--mask-blur));
+  animation: mask-in var(--mask-in) ease-out both;
+}
+/* 弹窗布局：grid 居中 + 留白（看图器不吃这条） */
+.modal-mask {
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+/* 看图器布局：铺满视口，内层自己负责排布（见 ImageLightbox.vue） */
+.iv-mask {
+  display: block;
+  padding: 0;
+}
+/* 退场态：由 JS 在卸载前挂上。只做颜色与模糊半径的过渡，理由见上。 */
+.modal-mask.is-leaving {
+  animation: none;
+  pointer-events: none; /* 退场中不再接收点击，避免连点穿透到「关闭」以外的交互 */
+}
+@keyframes mask-in {
+  from {
+    background-color: rgba(15, 20, 30, 0);
+    backdrop-filter: blur(0);
+    -webkit-backdrop-filter: blur(0);
+  }
+  to {
+    background-color: rgba(15, 20, 30, 0.45);
+  }
+}
+/* 退场统一由 .is-leaving 承载，两个遮罩层共用同一套时序 */
+.modal-mask.is-leaving,
+.sp-mask.is-leaving {
+  animation: mask-out var(--mask-out) ease-in forwards;
+}
+@keyframes mask-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    background-color: rgba(15, 20, 30, 0);
+    backdrop-filter: blur(0);
+    -webkit-backdrop-filter: blur(0);
+  }
+}
+/* 线框主题：遮罩是 80% 白，背景已近不可见，模糊没有意义且耗性能 → 关掉 */
+[data-theme='wire'] .modal-mask {
+  background-color: rgba(255, 255, 255, 0.8);
+  --mask-blur: 0px;
+}
+
+.modal {
+  width: 100%;
+  max-width: 520px;
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  /* 左右 22px。曾为补偿 .modal-body 的 4px 内缩改成 18px，
+   * Beta.285 去掉辉光后 .modal-body 已无内缩，补偿一并撤除 —— 恢复原值，
+   * 保证正文宽度与历史版本逐像素一致。两处永远成对改，见 .modal-body 上方说明。 */
+  box-shadow: var(--shadow-lg);
+  padding: 20px 22px;
+}
+.modal h3 {
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+.modal .sub {
+  color: var(--text-2);
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+.modal-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+  flex: none;
+}
+
+/* 弹窗统一头部：图标 + 标题 + 关闭 */
+.modal-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: -6px 0 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  flex: none;
+}
+.modal-head .modal-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  display: grid;
+  place-items: center;
+  flex: none;
+  background: var(--accent-weak);
+  color: var(--accent);
+}
+.modal-head .modal-icon.danger {
+  background: var(--danger-weak);
+  color: var(--danger);
+}
+.modal-head .title {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 600;
+  flex: 1;
+  line-height: 1.3;
+}
+.modal-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-2);
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  display: grid;
+  place-items: center;
+  flex: none;
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+.modal-close:hover {
+  background: var(--btn-ghost-hover);
+  color: var(--text);
+}
+/* 弹窗主体：flex 列布局 → 子元素可分别 "固定" 或 "占满滚动"。modal-head 在 body 外、绝对固定在 modal 顶部 */
+/*
+ * ★ 这里曾经有一整套「为焦点辉光预留空间」的补丁，Beta.285 全部撤除 ★
+ *
+ * 历史包袱（记下来免得有人再加回去）：
+ *   早期 `.input:focus` 带 `box-shadow: 0 0 0 3px`，阴影画在边框盒之外，
+ *   被 `.modal-body` 的 overflow:hidden 裁平。为救它，这里先后试过：
+ *     · `padding: 4px; margin: -4px`   → 负 margin 把内容推回裁剪线，缓冲实际为 0
+ *     · `padding: 4px`（不加负 margin） → 内容真实内缩，但搜索框与同级块错位
+ *     · 各组件自己加内缩（.tc-toolbar 6px / .row-2 4px / .pwd-row 4px）
+ *        → 越修越碎：每个弹窗各自算余量，且组件内一缩就和兄弟块左沿对不齐
+ *   用户连续两次反馈「辉光被裁切」「宽度没对齐」，最后定案：**去掉辉光本身**。
+ *
+ * 现在的口径：
+ *   `.input:focus` 只改边框颜色，不画任何外扩阴影（见 .input:focus 上方说明）。
+ *   既然没有东西溢出边框盒，这里就**不需要**任何额外内边距来容纳它。
+ *   于是回到最朴素的写法：不加 padding、不加负 margin，
+ *   弹窗内所有子块共享同一条内容边界，天然左右对齐。
+ *
+ * 注意 .modal 的左右 padding 已随之从 22px 恢复为 22px ——
+ * 上一版为了补偿 4px 内缩改成了 18px，现在没有内缩了，补偿也必须撤掉，
+ * 否则正文会比历史版本窄 8px。**这两处永远是成对的**，改一处必须改另一处。
+ */
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* 弹窗进入动效
+ * 与遮罩的分工：遮罩负责"背景退远"（变暗+模糊），这里负责"弹窗靠近"（位移+缩放）。
+ * 两者同时开始，.16s 与遮罩的 .18s 基本同步 —— 弹窗略早到位，收尾更利落。
+ * fill-mode 用 both：入场后停在 to 帧，不会闪回初始态。 */
+.modal {
+  animation: modal-in 0.16s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* 退场：与遮罩同向收缩（往下沉、略微缩小），比入场快 20ms，视觉上"被收走"而不是"自己消失"。
+ * 由 .modal-mask.is-leaving 触发，见 Mask.vue / Modal.vue 的退场时序。 */
+.modal-mask.is-leaving .modal {
+  animation: modal-out var(--mask-out) cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+@keyframes modal-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+}
+
+/* 尊重系统「减弱动态效果」（Windows：设置 → 辅助功能 → 视觉效果 → 动画效果 → 关闭）
+ * 无动画、无模糊：这两个都是前庭敏感的诱因。**只关动效，不关暗度** ——
+ * 遮罩的变暗是可访问性的一部分（提示"下面不可点"），不能一起删掉。 */
+@media (prefers-reduced-motion: reduce) {
+  .modal-mask,
+  .modal,
+  .modal-mask.is-leaving,
+  .modal-mask.is-leaving .modal,
+  .sp-mask,
+  .sp-drawer {
+    animation: none !important;
+  }
+  /* 模糊半径置 0：这里必须靠 --mask-blur 生效，而不是 !important 覆盖 backdrop-filter ——
+   * 后者会连带把「渐进模糊」也关成跳变。 */
+  .modal-mask,
+  .sp-mask {
+    --mask-blur: 0px;
+  }
+  /* 提示层的位移淡入同样关掉：它对「降低动效」的用户没有信息价值，
+   * 直接呈现反而更快读到文案。 */
+  .app-tip-enter-active,
+  .app-tip-leave-active {
+    transition: none;
+  }
+  .at-top.app-tip-enter-from,
+  .at-top.app-tip-leave-to,
+  .at-bottom.app-tip-enter-from,
+  .at-bottom.app-tip-leave-to {
+    transform: none;
+  }
+}
+
+/* ---------- Toast ---------- */
+.toast-wrap {
+  position: fixed;
+  top: 56px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-toast);
+}
+.toast {
+  padding: 9px 18px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+  font-size: 13px;
+  animation: fadein 0.18s ease;
+}
+.toast.ok {
+  color: var(--ok);
+}
+.toast.err {
+  color: var(--danger);
+}
+@keyframes fadein {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------- 自建悬停提示层（Beta.324，#437） ----------
+ * 由 src/composables/useTooltip.js 算位置、AppTooltip.vue 渲染，全站单例。
+ * 位置以 JS 内联的 left/top 为准（fixed 定位），这里只管长什么样。
+ *
+ * 【为什么 z-index 取 --z-toast 而不是 --z-hint】
+ *   --z-hint 的注释是「只读气泡 / 回到顶部」，那一档低于弹窗（3000）。
+ *   但提示层必须能盖住弹窗与下拉：设置页的弹窗里到处是带 title 的图标按钮，
+ *   提示若被弹窗底色压住就等于失效。全站只有 toast（操作结果反馈）该盖住提示，
+ *   故取 --z-toast 同级、排在 toast 之前的层序位置，仍在统一刻度内，不写裸数字。
+ *
+ * 【为什么用 --surface-3 而非 --surface】
+ *   light 下 --surface 与页面底几乎同色，提示贴在白卡片上会「糊成一片」看不清边界；
+ *   暗色下 --surface-3 也比 --surface 略亮，浮起感更明确。
+ *
+ * 【箭头用 border 三角而不是伪元素背景旋转】
+ *   旋转法要处理圆角接缝，且 rotate 后一半边框被父级裁剪，8 套主题下容易出现横线。 */
+.app-tip {
+  position: fixed;
+  z-index: var(--z-toast);
+  max-width: 280px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-lg);
+  font-size: 12px;
+  line-height: 1.5;
+  /* title 里可能有换行（如「用户 张三\n点击切换」），保留换行但限制最多显三行 */
+  white-space: pre-line;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  /* 提示层纯展示，不参与命中测试 —— 否则鼠标划到它上面会触发 mouseout 把它抖掉 */
+  pointer-events: none;
+  word-break: break-word;
+}
+/* 箭头：朝上放置时箭头在底部指向目标 */
+.app-tip::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 0;
+  border: 5px solid transparent;
+}
+.app-tip.at-top::after {
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-top-color: var(--border-strong);
+  border-bottom-width: 0;
+}
+.app-tip.at-bottom::after {
+  bottom: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-bottom-color: var(--border-strong);
+  border-top-width: 0;
+}
+
+/* 入场/退场：与全站浮层一致走淡入 + 轻微位移。
+ * 位移方向按 placement 分开 —— 出现在上方时从下往上浮，出现在下方时从上往下落，
+ * 视觉上「从目标处生长出来」而不是凭空闪现。 */
+.app-tip-enter-active {
+  transition:
+    opacity 0.14s ease,
+    transform 0.14s ease;
+}
+.app-tip-leave-active {
+  transition:
+    opacity 0.1s ease,
+    transform 0.1s ease;
+}
+.app-tip-enter-from,
+.app-tip-leave-to {
+  opacity: 0;
+}
+.at-top.app-tip-enter-from,
+.at-top.app-tip-leave-to {
+  transform: translateY(4px);
+}
+.at-bottom.app-tip-enter-from,
+.at-bottom.app-tip-leave-to {
+  transform: translateY(-4px);
+}
+
+/* ---------- 页面通用 ---------- */
+.page-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.page-head h1 {
+  font-size: 20px;
+  font-weight: 700;
+}
+.page-head .desc {
+  color: var(--text-2);
+  font-size: 12px;
+}
+.page-head .spacer {
+  flex: 1;
+}
+
+/* 文档详情页页头吸顶（Beta.242 需求：顶部标题与按钮悬浮跟随滚动）。
+ *
+ * 【为什么必须补背景】position:sticky 只是让元素「停在原地」，
+ *   后面的正文滚上来时会从它下方向上穿过，若背景不透明就会文字重叠成一团。
+ * 【z-index 取 --z-hint】全局刻度里 --z-hint:1000 是「辅助悬浮控件」那一档，
+ *   正好低于抽屉/弹窗/查找条/下拉/Toast —— 页头吸顶不该盖住任何浮层。
+ *
+ * 【必须向上吃掉 .main 的 padding-top，否则"没贴顶"】
+ *   .main 的 padding 是 20px 24px 40px。position:sticky 只约束「元素自身边距盒」
+ *   的吸附位置：若只写 top:0，元素停在内容区顶部（容器顶 + 20px），
+ *   上方那 20px 仍属 .main 内边距 —— 页面滚动时正文会从那道缝里透出来，
+ *   看起来就是「悬浮栏没贴顶、上面漏了一条」。
+ *   ⇒ 用 margin-top:-20px 把自身提到容器顶，同时 padding-top 补回 20px 撑住高度，
+ *     元素边距盒于是覆盖满整条，吸附时严丝合缝。
+ * 【左右同理 -24px】抵消 .main 左右 padding，让分隔线贴到容器边缘。
+ *
+ * 【背景必须用 --surface（卡片底），不能用 --bg（外层底）】
+ *   下方内容首块是卡片（--surface）。若吸顶栏用 --bg，暗色/竹青等主题下
+ *   --bg 与 --surface 差异明显，栏与卡片就分成两层色，像"悬浮栏没跟卡片同底"。
+ *   改成 --surface 后两者同底，1px 分隔线即为内容区顶界，视觉连续。
+ * 【margin-bottom 必须等于卡片间距（Beta.247 修正）】
+ *   上一版把 margin-bottom 收成 0，理由是「同底后无需留缝」——那个判断是错的：
+ *   .page-head 是 .main 的**普通子元素**，.post-layout 是紧跟其后的兄弟，
+ *   两者之间除了这条 margin 再无任何间距来源（.post-layout 的 gap 只作用于
+ *   它内部的 grid 项目，管不到它与页头之间）。
+ *   于是正文首卡直接压在页头分隔线上（实测 -1px），
+ *   而卡片之间是 16px —— 视觉上首卡明显"贴住页头"。
+ *   分隔线只负责「分隔」，不负责「留白」；留白得由间距给。 */
+/* 吸顶栏高度见 .main 上的 --sticky-head-h（两处共用，保持单一数据源）。 */
+.page-head.sticky-head {
+  position: sticky;
+  /* ★ top 必须取负的 padding-top 值(-20px)，不能取 0。
+   *   .main 是 overflow:auto 滚动容器，sticky 的吸附基准是它的 padding box，
+   *   而 padding box 顶部在容器内又下移了 padding-top(20px)。
+   *   只写 top:0 = 停在 y=(容器顶+20px)，上方 20px 露出 .main 内边距 → 内容从缝里透出。
+   *   写 top: 0 正好把吸附线提到容器真正的最顶端。 */
+  top: -20px;
+  z-index: var(--z-hint);
+  background: var(--surface);
+  /* 上边距吃掉 .main 的 padding-top(20px)，让栏体上沿与吸附线(容器顶)对齐。
+   * ★ Beta.251 起这个 -20px 是**固定值**，不再随 padding-top 变化 ——
+   *   它只负责"贴顶"，内容居中由上下 padding 的对称性负责，两件事解耦（详见下方注释）。 */
+  margin-top: -20px;
+  /* 左右负边距抵消 .main 的左右 padding，让底板与分隔线贴到内容区边缘。 */
+  margin-left: -24px;
+  margin-right: -24px;
+  /* 与下方卡片间距同值：正文首卡、右侧历史版本卡都从这条线往下 16px 起排。
+   * 字面量 16px 与 .card-stack 的 --card-gap 默认值一致 —— 此处不能写 var(--card-gap)，
+   * 因为它是定义在 .card-stack 元素上的局部变量，页头不是 .card-stack 的后代，取不到。 */
+  margin-bottom: var(--card-gap, 16px);
+  padding-left: 24px;
+  padding-right: 24px;
+  /* ===== Beta.251：内容垂直居中（用户要求「悬浮栏内容上下居中」）=====
+   *
+   * 【问题】旧值是 padding: 20px 24px 2px（上 20 / 下 2），严重不对称：
+   *   按钮高 32px，实测 top=64 / bottom=96
+   *   ⇒ 感知区 [44, 99]（可见高 55px）内，上方留白 20px、下方仅 2px。
+   *   左右并排看更明显：右侧图标中心 y=80，比左侧导航图标中心 y=75 还低 5px。
+   *   观感就是"内容沉在栏底、上面空一大块" —— 正是用户说的"没上下居中"。
+   *
+   * 【为什么旧值会写成 20/2 这种怪比例】两个历史包袱叠加：
+   *   ① padding-top:20px 原本是拿来"抵消 .main 的 padding-top 20px"的，
+   *      好让 sticky 吸附时栏体上沿贴住容器顶（配合 margin-top:-20px）；
+   *   ② padding-bottom:2px 是 Beta.248 为了把底部分割线从 y=107 压到 y=99、
+   *      与左侧 .nav-toolbar 的分割线对齐而特意收窄的。
+   *   这两条各自都成立，凑在一起就把内容挤成了"上 20 下 2"。
+   *
+   * 【正确的解】把"抵消父级 padding"这件事**完全交给 margin-top**，
+   *   padding-top 就只剩"内容盒起点"这一个职责，而它是自由的：
+   *     栏体上沿 = .main 内容区顶(64) + margin-top(-20) = 44   ✓ 贴顶
+   *     栏体底   = 上沿 + padding-top + 32 + padding-bottom + 1
+   *   要让底边仍锁在 99（保住与左栏的分割线对齐）：
+   *     padding-top + padding-bottom = 99 - 44 - 32 - 1 = 22
+   *   要让内容在这 22px 里**上下均分**：
+   *     padding-top = padding-bottom = 11  ✓
+   *   ⇒ padding: 11px 24px 11px，栏体高 = 11+32+11+1 = 55px（与旧值等高，底边纹丝不动）
+   *     内容中心 = 44 + 11 + 16 = 71，感知区中心 = (44+99)/2 = 71.5
+   *     （差 0.5px 是 55px 奇数高的固有半像素，无法再消除，肉眼不可辨。）
+   *
+   * 【为什么不能改 padding-bottom 之外随便调】曾试过"减小 padding-top、加负 margin 补回"，
+   *   但那只会在栏体**外部**腾挪，栏体高度随之变化 → 底边跟着漂 → 分割线失准。
+   *   唯一自洽的做法是保持 padding-top + padding-bottom ≡ 22，让两者对称。
+   *
+   * 【连带影响：--sticky-rail-top **不需要**改】
+   *   一度以为要按"页头可见高 55 − padding-top + --card-gap 16"重算成 60px，是错的：
+   *   那个换算的基准是 **.main 的 padding-top(20px)**（sticky 吸附基准），
+   *   不是页头自身的 padding-top。页头 padding 只决定它内部内容怎么排，
+   *   与右侧版本栏的 sticky 偏移毫无关系。实测改成 60px 后版本栏被下推 9px、错位明显。
+   *   ⇒ 结论：本值保持 51px 不变（实测关系：静止态 gap = 本值 − 35）。 */
+  padding-top: 11px;
+  padding-bottom: 11px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* 纯图标按钮（Beta.242 需求「按钮只留图标」）。
+ * 现有 .btn 的左右 padding 是按「图标 + 文字」设计的，去掉文字后
+ * 按钮会变成一个横向很宽的方块 —— 故这里用正方形 padding + 居中。
+ * 尺寸取 32px 是为了与旁边 34px 高的输入框/下拉触发器视觉对齐。 */
+.btn.btn-icon {
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.grid {
+  display: grid;
+  gap: 14px;
+}
+.grid-2 {
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+}
+.grid-4 {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 22px 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dim {
+  color: var(--text-2);
+  font-size: 12px;
+}
+.code {
+  background: var(--surface-3);
+  padding: 1px 7px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+/* ---------- 正文内容渲染 ---------- */
+.post-content {
+  line-height: 1.85;
+  color: var(--text);
+  user-select: text;
+}
+.post-content p {
+  margin: 10px 0;
+}
+.post-content h1,
+.post-content h2,
+.post-content h3,
+.post-content h4 {
+  margin: 18px 0 8px;
+}
+/* ★ Beta.322：尺寸条改为「像素 + 锁定比例」后，宽高由内联 style 表达（见 utils/imageSize.js）。
+     max-width:100% 仍保留作为兜底 —— 用户把窗口拉得比图还窄时，图会跟着收，
+     不会在正文里横向溢出；锁定比例时高度也一并受 max-height 约束（见下行）。 */
+.post-content img {
+  max-width: 100%;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  /* ★ Beta.316：可点击看原尺寸（需求 4）。正文图片在 markSelectableMedia 里被标了
+     data-img-zoom="1"，光标给放大镜，让"能点"这件事先于用户尝试就被看见。
+     外链图不打标记，故不受影响。 */
+}
+.post-content img[data-img-zoom] {
+  cursor: zoom-in;
+}
+.post-content blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 4px 14px;
+  color: var(--text-2);
+  margin: 10px 0;
+  background: var(--surface-2);
+  border-radius: 0 8px 8px 0;
+}
+.post-content ul,
+.post-content ol {
+  padding-left: 24px;
+  margin: 8px 0;
+}
+.post-content hr {
+  border: none;
+  border-top: 1px dashed var(--border-strong);
+  margin: 14px 0;
+}
+.post-content a {
+  color: var(--accent);
+}
+.post-content code {
+  background: var(--surface-3);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+}
+.editor-area {
+  min-height: 360px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  outline: none;
+  line-height: 1.85;
+  user-select: text;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+/* 正文编辑器内联图：限制最大宽度，避免撑破编辑框（查看模式已有同名规则，这里补齐编辑态）
+ *
+ * ★ Beta.322：height:auto 不能无条件写 ★
+ *   锁定比例时，高度是由宽度换算出的像素值、写在 img 的内联 style 上。
+ *   若这里无条件 height:auto，它会参与「同属性不同来源」的比较 —— 行内声明
+ *   虽然优先，但这条规则会让「只设了宽度、高度留给浏览器按原比例算」的图片
+ *   与「显式锁比例」的图片行为混在一起，排查时极难分辨。故拆成两条：
+ *   默认按原比例自适应；一旦内联里出现 height，就交给行内值说了算。
+ */
+.editor-area img {
+  max-width: 100%;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  /* 编辑态点图同样开原尺寸浮窗（Beta.316）：与查看态同一光标线索，
+     否则同一种图在两种模式下长得一样却行为不同，用户会以为"编辑时点不动"。 */
+  cursor: zoom-in;
+}
+/* 未显式设定高度时，高度按原始比例自适应（与历史行为一致） */
+.editor-area img:not([style*='height']) {
+  height: auto;
+}
+/* 选中图片（ProseMirror 给选中节点挂 ProseMirror-selectednode）：给个高亮边框，
+   让用户知道下方尺寸条此刻作用于哪张图。 */
+.editor-area img.ProseMirror-selectednode {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+/* Tiptap（ProseMirror）编辑区结构：EditorContent 外层 .editor-area 负责边框/底色，
+ * 内层 .ProseMirror 负责文档排版。二者分离，避免把 UI 边框与文档内容搅在一起。 */
+.editor-area > .ProseMirror {
+  min-height: 330px;
+  outline: none;
+}
+.editor-area > .ProseMirror > :first-child {
+  margin-top: 0;
+}
+.editor-area > .ProseMirror > :last-child {
+  margin-bottom: 0;
+}
+/* 编辑器焦点态：同 .input，只换边框不画辉光（原因见 .input:focus 上方说明） */
+.editor-area:focus {
+  border-color: var(--accent);
+}
+
+/* ── 编辑态块级排版（Beta.319）────────────────────────────────────
+   ★ 症状与根因 ★
+   用户反馈「有/无序列表应用下的文字太贴边」「引用模式无样式显示」。
+   根因是同一件事：上面 .post-content 里那套 ul/ol/blockquote 样式只服务于
+   **查看态**，编辑态容器是 .editor-area，此前一条列表/引用规则都没写。
+   于是编辑时列表退化成浏览器默认（list-style-position 贴到文字上、无左内边距），
+   引用退化成裸段落（既无左侧竖线也无底色）—— 看起来就是「没生效」。
+   这里把查看态那套补齐到编辑态，两态所见即所得。 */
+.editor-area ul,
+.editor-area ol {
+  /* 与 .post-content 完全同值（24px）：两态缩进必须一致，
+     否则编辑时看着合适、发布后变样。且 padding 而非 margin，缩进才落在列表盒内。 */
+  padding-left: 24px;
+  margin: 8px 0;
+}
+/* 列表项内部段落不额外撑高：ProseMirror 的 listItem > paragraph 会吃 p 的 margin，
+   否则一项内多段会拉出一大段空白 */
+.editor-area li > p {
+  margin: 2px 0;
+}
+.editor-area li > p:first-child {
+  margin-top: 0;
+}
+.editor-area li > p:last-child {
+  margin-bottom: 0;
+}
+/* 引用：与 .post-content blockquote 同一形制（左侧 accent 竖线 + 弱底色 + 右圆角） */
+.editor-area blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 4px 14px;
+  color: var(--text-2);
+  margin: 10px 0;
+  background: var(--surface-2);
+  border-radius: 0 8px 8px 0;
+}
+.editor-area blockquote > p {
+  margin: 2px 0;
+}
+/* 举一反三：同样只在查看态有样式的块级元素，一并在编辑态补齐 ——
+   hr / 行内代码 / 代码块，否则编辑时它们也是「没生效」的样子。 */
+.editor-area hr {
+  border: none;
+  border-top: 1px dashed var(--border-strong);
+  margin: 14px 0;
+}
+.editor-area code {
+  background: var(--surface-3);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+}
+.editor-area pre {
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin: 10px 0;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.editor-area pre code {
+  background: none;
+  padding: 0;
+}
+/* 对齐（TextAlign 扩展写 inline style text-align）：块级元素 inherit 即可，
+   无需额外规则；此处不设 text-align，避免与用户设置的对齐方式互相打架。 */
+.editor-area[data-readonly='true'] {
+  background: var(--surface-2);
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+.editor-area[data-readonly='true']:focus {
+  border-color: var(--border);
+}
+.editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.tb-btn {
+  min-width: 30px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-2);
+  font-size: 13px;
+}
+.tb-btn:hover {
+  background: var(--btn-ghost-hover);
+  color: var(--text);
+  border-color: var(--border);
+}
+/* 工具栏按钮激活态（光标所在格式命中该工具）：与 hover 同族反馈但带主题弱底色，一眼可辨 */
+.tb-btn.on {
+  background: var(--accent-weak);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.tb-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.tb-btn:disabled:hover {
+  background: transparent;
+  color: var(--text-2);
+  border-color: transparent;
+}
+
+/* ── 文本方向（RTL 语言：阿拉伯语）──────────────────────
+   骨架永远 LTR —— 见 src/i18n/index.js 的 syncHtmlLang() 注释。
+   这里只让「读的文字」按语言方向排列，不碰 flex 主轴 / margin 左右 /
+   弹层锚定边 —— 那些一翻就散架（Beta.318 整树镜像的教训）。
+   unicode-bidi: plaintext：让每段文字按自身首强字符定方向，
+   中英混排、数字、标点仍各自正确，不把拉丁技术名词也拉到右边。 */
+[data-text-dir='rtl'] :is(p, li, h1, h2, h3, h4, h5, h6, td, th) {
+  direction: rtl;
+  unicode-bidi: plaintext;
+  text-align: right;
+}
+[data-text-dir='rtl'] input:not([type='number']):not([type='checkbox']):not([type='radio']),
+[data-text-dir='rtl'] textarea {
+  direction: rtl;
+  unicode-bidi: plaintext;
+  text-align: right;
+}
+/* 居中类输入（题注、页码、每页条数等）保持居中 */
+[data-text-dir='rtl'] input[type='number'],
+[data-text-dir='rtl'] .ps-input {
+  text-align: center;
+  direction: ltr;
+}

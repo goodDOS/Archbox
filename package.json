@@ -1,0 +1,80 @@
+{
+  "name": "archbox",
+  "productName": "文档盒 Archbox",
+  "version": "0.9.0-Beta.325",
+  "description": "单机文档录入软件（Windows 桌面端）——大区/分类两级归档与全局标签、自定义字段、文档包导入导出、全文搜索高亮、历史版本、操作审计、AES-256-GCM 数据库透明加密，八套主题",
+  "main": "electron/main.js",
+  "author": "文档盒项目组（WorkBuddy 协同生成）",
+  "license": "CC-BY-NC-SA-4.0",
+  "scripts": {
+    "dev": "concurrently -k \"vite\" \"wait-on tcp:127.0.0.1:5173 && electron . --dev\"",
+    "build": "node scripts/guard-index-html.mjs && vite build",
+    "start": "electron .",
+    "seed": "electron . --seed",
+    "dist": "npm run build && electron-builder --win",
+    "shot": "electron . --shot",
+    "test": "node scripts/run-tests.mjs",
+    "test:standardize": "node electron/verify/standardize.test.mjs",
+    "lint": "eslint .",
+    "pack": "node scripts/build-win-unpacked.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check:gap": "node scripts/check-card-gap.mjs",
+    "check:img-fit": "node scripts/check-image-fit.mjs",
+    "check:save-group": "node scripts/check-save-group.mjs"
+  },
+  "dependencies": {
+    "sanitize-html": "2.13.1",
+    "sql.js": "^1.11.0"
+  },
+  "devDependencies": {
+    "@electron/fuses": "^1.8.0",
+    "@eslint/js": "^10.0.1",
+    "@tiptap/extension-highlight": "^3.32.0",
+    "@tiptap/extension-image": "^3.32.0",
+    "@tiptap/extension-placeholder": "^3.32.0",
+    "@tiptap/extension-subscript": "^3.32.0",
+    "@tiptap/extension-superscript": "^3.32.0",
+    "@tiptap/extension-text-align": "^3.32.0",
+    "@tiptap/extension-text-style": "^3.32.0",
+    "@tiptap/pm": "^3.32.0",
+    "@tiptap/starter-kit": "^3.32.0",
+    "@tiptap/vue-3": "^3.32.0",
+    "@vitejs/plugin-vue": "^5.0.5",
+    "concurrently": "^8.2.2",
+    "dompurify": "^3.1.6",
+    "electron": "^30.3.1",
+    "electron-builder": "^24.13.3",
+    "eslint": "^10.13.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-vue": "^10.11.1",
+    "jsdom": "^26.1.0",
+    "prettier": "^3.9.10",
+    "resedit": "^3.1.0",
+    "vite": "^5.3.3",
+    "vite-plugin-singlefile": "^2.3.3",
+    "vue": "^3.4.31",
+    "wait-on": "^7.2.0"
+  },
+  "build": {
+    "appId": "com.archbox.app",
+    "productName": "文档盒 Archbox",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**/*",
+      "!electron/verify/**",
+      "dist/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "**/node_modules/sql.js/**"
+    ],
+    "afterPack": "scripts/afterPack.js",
+    "win": {
+      "target": "dir"
+    }
+  }
+}

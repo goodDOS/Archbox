@@ -1,0 +1,59 @@
+/* ============ 首页 7 日柱状图共用样式 ============
+ * TrendChart（近 7 日录入趋势）与 MiniBars（文档概览 / 使用时长卡片内）同源引用，
+ * 保证首页三张图视觉完全一致，且后续只需改这一处。
+ * 注意：wire 主题的斜线规则必须写在全局作用域——组件 scoped 内的属性选择器
+ * [data-theme='wire'] 会在构建时被剥离，导致彩色主题误走斜线（Beta.126 踩过的坑）。
+ */
+
+.b7-bars {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 6px;
+}
+.b7-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+.b7-bar {
+  width: 60%;
+  max-width: 34px;
+  min-height: 6px;
+  opacity: 0.9;
+  background: linear-gradient(180deg, var(--accent) 0%, var(--c-indigo) 100%);
+  border-radius: 5px 5px 2px 2px;
+}
+/* 0 值：淡色短柱，保留「这天无数据」的视觉位置，不整根消失 */
+.b7-bar.zero {
+  min-height: 2px;
+  opacity: 0.22;
+}
+.b7-val {
+  font-size: 11px;
+  line-height: 1;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.b7-lab {
+  font-size: 11px;
+  line-height: 1;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* 黑白线框主题：斜线填充（全局作用域，见文件头说明） */
+[data-theme='wire'] .b7-bar {
+  background: repeating-linear-gradient(45deg, var(--text) 0 2px, transparent 2px 5px);
+  border: 1px solid var(--text);
+  opacity: 1;
+}
+[data-theme='wire'] .b7-bar.zero {
+  opacity: 0.3;
+}

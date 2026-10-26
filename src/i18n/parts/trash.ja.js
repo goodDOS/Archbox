@@ -1,0 +1,20 @@
+export default {
+  title: 'ゴミ箱',
+  desc: '削除されたドキュメントはまずゴミ箱に入り、いつでも復元できます。完全削除後は復元できません。削除はマークのみで、すぐに物理削除はされません。',
+  purgeAll: 'ゴミ箱を空にする',
+  inTrash: 'ゴミ箱内の合計',
+  pageOf: '{page} / {totalPages}ページ',
+  draft: '下書き',
+  deletedAt: '{time}に削除',
+  purge: '完全削除',
+  empty: 'ゴミ箱は空です',
+  restored: '復元しました: {title}',
+  purgePwdMsg: '「{title}」を完全削除すると復元できません。パスワードの確認が必要です。',
+  purgePwdTitle: '完全削除の確認',
+  purged: '完全削除しました: {title}',
+  purgeFailed: '完全削除に失敗しました',
+  purgeAllPwdMsg: 'ゴミ箱内の全{n}件のドキュメントを完全削除します。この操作は復元できず、パスワードの確認が必要です。',
+  purgeAllPwdTitle: 'ゴミ箱を空にする確認',
+  deleteFailed: '削除に失敗しました: {title}',
+  purgedAll: 'ゴミ箱を空にしました'
+};

@@ -1,0 +1,46 @@
+name: CI
+
+# ★ 为什么 build 必须排在 test 之前 ★
+#   部分断言直接校验**构建产物**，而不是只看源码。典型：
+#   - standardize.test.mjs 要读 dist/index.html，验证 i18n 键在生产包里真的内联进去
+#     （源码里齐全、打包后被 tree-shaking 掉的情况真的发生过，见 Beta.279 的繁体丢失事故）；
+#   - app-integrity / asar-integrity 校验 asar 头哈希与 exe 资源注入。
+#   所以顺序不能反过来 —— 先 test 会因为没有 dist 直接报「dist/index.html 不存在」。
+#
+# ★ 为什么不在这里跑 npm run pack ★
+#   打包会写回 package.json 的版本号并产出 Windows 产物，属于发布动作，不适合在 PR 上做。
+#   依赖 release/ 的那几组断言本身带跳过逻辑，缺产物时会打印原因并跳过，不会假红。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    name: lint / build / test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 格式检查
+        run: npm run format:check
+
+      - name: 静态检查
+        run: npm run lint
+
+      # 构建必须在测试之前，理由见文件头注释。
+      - name: 构建
+        run: npm run build
+
+      - name: 测试
+        run: npm test

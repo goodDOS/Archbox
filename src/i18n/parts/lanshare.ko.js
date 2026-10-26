@@ -1,0 +1,161 @@
+export default {
+  // 페이지 헤더와 도구 모음
+  title: '로컬 공유',
+  desc: '로컬 네트워크에서 문서를 읽기 전용으로 공유합니다 · 선택된 구역의 게시된 문서만 포함하며 계정 정보, 초안, 템플릿은 포함하지 않습니다',
+  myShare: '내 공유',
+  discovering: '발견 중',
+  rediscover: '다시 발견',
+  notEnabledHint: '아직 공유를 켜지 않았습니다. 오른쪽 위의 「내 공유」를 눌러 켜고 공유할 구역을 선택하세요',
+  serviceOn: '로컬 공유 서비스가 켜져 있습니다(포트 {port})',
+  readonlyHint: '읽기 전용 열람 · 데이터에 계정 없음',
+
+  // 공유 소스 목록
+  sourcesCount: '공유 소스({n})',
+  self: '로컬',
+  lan: '로컬 네트워크',
+  unnamedSource: '이름 없는 공유 소스',
+  emptyLocalOff: '아직 공유를 켜지 않았습니다. 「내 공유」를 눌러 켜면 여기에 공유 구역이 표시됩니다',
+  loadingRegions: '구역 로딩 중…',
+  authTip: '이 공유 소스는 접속 토큰이 필요합니다. 상대방에게 받아 입력하세요',
+  token: '접속 토큰',
+  connecting: '연결 중',
+  connect: '연결',
+  noRegions: '이 공유 소스에는 공유 구역이 없습니다',
+  noSources:
+    '공유 소스를 발견하지 못했습니다. 상대방이 「로컬 공유」를 켰는지, 방화벽이 UDP 47471과 TCP {port}를 허용했는지 확인하세요.',
+  noSourcesAuth: '상대방이 접속 토큰 검증을 켰으므로 토큰을 받아야 연결할 수 있습니다.',
+  pickRegion: '← 왼쪽에서 공유 소스의 구역을 선택하여 읽기 전용 문서를 확인하세요',
+
+  // 문서 목록과 상세
+  unnamed: '이름 없음',
+  readonly: '읽기 전용',
+  searchInRegion: '구역에서 검색…',
+  postCount: '{n}개 문서',
+  listMetaPre: '총 ',
+  listMetaPost: '개 문서 · {page} / {pages} 페이지',
+  noPosts: '이 조건에 해당하는 문서가 없습니다',
+  backToListTitle: '공유 문서 목록으로 돌아가기',
+  backToList: '목록으로',
+  findTitle: '현재 페이지에서 텍스트 찾기(Ctrl+F)',
+  findHere: '페이지 내 찾기',
+  copyTitleOk: '이 문서를 로컬 문서 저장소로 복사',
+  copyTitleNo: '이 공유 소스는 문서 복사를 허용하지 않습니다',
+  fieldsTitle: '필드 데이터',
+  authorLine: '작성자: {name}',
+
+  // 실행 상태 오류와 회신
+  loadStatusFailed: '공유 상태 가져오기 실패',
+  tokenExpired: '토큰이 만료되었습니다(상대방이 재생성했을 수 있습니다). 다시 입력하세요',
+  tokenWrong: '접속 토큰이 올바르지 않습니다',
+  cannotConnect: '이 공유 소스에 연결할 수 없습니다',
+  tokenRequired: '접속 토큰을 입력하세요',
+  tokenWrongOrOff: '접속 토큰이 올바르지 않거나 상대방이 공유를 켜지 않았습니다',
+  discoverFailed: '공유 소스 발견 실패',
+  fetchPostsFailed: '문서 가져오기 실패',
+  postGone: '문서가 없거나 제거되었습니다',
+  fetchPostFailed: '문서 상세 가져오기 실패',
+  copyFailed: '복사 실패',
+  localLibrary: '로컬 문서 저장소',
+  whereRegion: '「{region}」{category}',
+  copiedTo: '{where}에 복사됨',
+  copyToast: '로컬에 복사됨: {title}{where}{unreported}',
+  notReported: '(원본 호스트에 알리지 못함)',
+
+  // 공유 패널: 스위치와 설명
+  enableSwitch: '로컬 네트워크 공유 켜기',
+  enableDesc:
+    '켜면 다른 단말이 로컬 네트워크에서 선택한 구역의 문서를 읽기 전용으로 열람할 수 있습니다(계정 정보, 초안, 템플릿 제외).',
+  authSwitch: '연결에 접속 토큰 필요',
+  authDesc1:
+    '켬: 다른 단말이 토큰을 수동 입력해야 하며 토큰은 로컬 네트워크에 브로드캐스트되지 않습니다. 끔: 토큰이 공개 브로드캐스트되어 클릭 즉시 연결됩니다.',
+  authDescRotate: '다시 켜면 새 토큰으로 교체됩니다',
+  authDesc2: '，이미 연결된 단말은 다시 입력해야 합니다.',
+  copySwitch: '다른 사람의 문서 복사 허용',
+  copyDesc1: '켬: 다른 단말이 로컬가 공유한 문서를',
+  copyDescTo: '자신의 문서 저장소로 복사',
+  copyDesc2:
+    '(복사본은 상대방에 귀속되며 원저작자 스냅샷 포함). 끔: 상대방은 읽기 전용 열람만 가능하며 복사해 갈 수 없습니다.',
+
+  // 공유 패널: 연결 정보
+  hostNameLabel: '호스트 이름',
+  hostNamePlaceholder: '로컬 네트워크에 표시할 이름',
+  localAddr: '로컬 주소',
+  hide: '숨기기',
+  show: '표시',
+  copyTokenTitle: '토큰 복사',
+  regenTokenTitle: '토큰 재생성',
+  noteAuthOn:
+    '다른 단말이 「로컬 공유」 목록에서 로컬를 발견한 후 위의 접속 토큰을 수동 입력해야 읽기 전용 열람이 가능합니다.',
+  clearCached: '로컬가 기억한 토큰 지우기',
+  noteAuthOff1:
+    '현재 자동 발견 모드: 토큰이 로컬 네트워크 브로드캐스트와 함께 전송되어 상대방 단말이 클릭 즉시 연결되며 수동 입력이 필요 없습니다，',
+  noteAuthOffWarn: '같은 네트워크의 타인이 이를 통해 연결할 수 있습니다',
+  noteAuthOff2: '。강화하려면 위의 「연결에 접속 토큰 필요」를 켜세요.',
+
+  // 공유 패널: 구역 선택과 통계
+  pickRegionsTitle: '공유할 구역 선택',
+  syncAllBtn: '전체 업데이트',
+  unshared: '미공유',
+  noRegionsEmpty: '구역이 없습니다. 먼저 왼쪽에서 구역을 만드세요.',
+  visitorRankTitle: '방문자 순위(최근 7일 · 7명)',
+  noVisitors: '최근 7일 방문자 접속 기록이 없습니다.',
+  unknownHost: '알 수 없는 호스트',
+  macUnknown: '가져오지 못함',
+  countTimes: '{n}회',
+  postRankTitle: '문서 열람 순위(최근 7일 · 7편)',
+  noPostRank: '최근 7일 문서 열람 기록이 없습니다.',
+  copyRankTitle: '문서 복사 순위({n})',
+  noCopyRank: '문서 복사 기록이 없습니다. 타인이 로컬 공유 문서를 복사해 가면 여기에서 횟수별로 순위가 매겨집니다.',
+  firstTime: '최초',
+  lastTime: '최근',
+  copiers: '복사자: {who}',
+  copyLogTitle: '복사 기록({n})',
+  noCopyLog: '복사 기록이 없습니다.',
+  tookAway: '「{title}」을(를) 복사해 감',
+  visitorLogTitle: '방문자 열람 기록({n})',
+  noVisitorLog: '방문자 열람 기록이 없습니다. 다른 단말이 로컬 공유를 발견하고 접속하면 여기에 표시됩니다.',
+  offDesc:
+    '공유가 꺼져 있습니다. 켜면 로컬가 읽기 전용 문서 소스로 작동하여 UDP 브로드캐스트로 로컬 네트워크의 다른 단말에 발견됩니다.',
+
+  // 열람 기록 라벨과 MAC 신뢰도
+  browseRegion: '구역 「{name}」 열람',
+  browseRegionPlain: '구역 열람',
+  viewPost: '문서 「{title}」 보기',
+  viewPostNo: '문서 #{id} 보기',
+  browseSourcesOverview: '공유 소스 개요 열람',
+  viewStats: '통계 보기',
+  access: '접속',
+  macArp: '실측',
+  macSelf: '자체 보고',
+  macTipArp: '로컬 네트워크 이웃 테이블(ARP) 실측에서 가져옴, 같은 네트워크일 때 신뢰할 수 있음',
+  macTipSelf:
+    '상대방이 스스로 보고함, 네트워크를 넘을 때 유일한 출처. 주의: 이 값은 상대방이 위조할 수 있어 신원 증빙으로 사용할 수 없음',
+  macTipUnknown: '이 MAC의 출처를 판단할 수 없음',
+
+  // 스위치 작업 피드백과 확인 창
+  enabledOn: '로컬 네트워크 공유가 켜졌습니다',
+  enabledOff: '로컬 네트워크 공유가 꺼졌습니다',
+  regionShared: '「{name}」을(를) 공유했습니다',
+  regionUnshared: '「{name}」 공유를 취소했습니다',
+  allUpdated: '모든 공유 구역이 업데이트되었습니다',
+  confirmAuthOff:
+    '끄면 접속 토큰이 로컬 네트워크 브로드캐스트로 평문 전송되어 같은 네트워크의 다른 단말이 로컬 공유에 직접 연결할 수 있습니다. 끄시겠습니까?',
+  confirmAuthOn:
+    '접속 토큰 검증을 다시 켜면 새 접속 토큰이 발급되어 이미 연결된 단말이 즉시 무효화되며 새 토큰을 다시 입력해야 접속할 수 있습니다. 켜시겠습니까?',
+  authOnRotated: '접속 토큰 검증을 켰으며 새 접속 토큰을 발급했습니다(이미 연결된 단말은 다시 입력해야 함)',
+  authOn: '접속 토큰 검증을 켰습니다',
+  authOffNote: '접속 토큰 검증을 껐습니다(토큰이 브로드캐스트로 배포됨)',
+  confirmCopyOn:
+    '켜면 같은 네트워크에서 접속 토큰을 가진 단말이 로컬가 공유한 문서를 통째로 자신의 문서 저장소에 복사할 수 있습니다. 문서가 한 번 복사되면 로컬에서 회수할 수 없습니다. 켜시겠습니까?',
+  copyOn: '타인의 로컬 공유 문서 복사를 허용했습니다',
+  copyOff: '문서 복사를 껐습니다',
+  confirmRegen: '재생성하면 이미 연결된 단말이 새 토큰을 다시 입력해야 접속할 수 있습니다. 재생성하시겠습니까?',
+  tokenRegenerated: '접속 토큰을 재생성했습니다',
+  clearedTokens: '캐시된 접속 토큰 {n}개를 지웠습니다',
+  noCachedTokens: '로컬에 캐시된 접속 토큰이 없습니다',
+  clearFailed: '지우기 실패',
+  tokenCopied: '토큰이 복사되었습니다',
+  copyTokenFailed: '복사 실패',
+  hostNameRequired: '호스트 이름은 비워둘 수 없습니다',
+  nameSet: '로컬 이름을 「{name}」(으)로 설정했습니다'
+};

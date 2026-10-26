@@ -1,0 +1,72 @@
+export default {
+  logoChar: '档',
+  title: 'À propos',
+  subtitle: '文档盒 Archbox · Station de saisie de documents hors ligne',
+  appName: '文档盒',
+  appNameEn: 'Archbox',
+  testBadge: 'Version de test Test',
+  testSuffix: ' (test)',
+  desc: "文档盒 Archbox est un poste de gestion documentaire hors ligne : l'archivage des documents suit une hiérarchie à deux niveaux « région → catégorie », complétée par des étiquettes globales et des champs personnalisés pour une saisie structurée. Il prend en charge l'historique des versions, la recherche plein texte, la chaîne d'audit des opérations et le chiffrement transparent AES-256-GCM. Le partage en lecture seule est possible au sein du même réseau local, et les documents peuvent être emballés pour une migration hors ligne. Toutes les données restent stockées localement, sans aucune connexion réseau ni télémétrie intégrée.",
+  guideTitle: 'Documentation du logiciel',
+  guideDesc: "Consulter les fonctionnalités et le guide d'utilisation",
+  sponsorTitle: 'Porteur du projet',
+  sponsorAvatar: '粤',
+  sponsorName: '粤威通（东莞）科技有限公司',
+  sponsorNameEn: 'YueWeiTong (Dongguan) Technology Co., Ltd.',
+  leadTitle: 'Pilote du développement',
+  leadAvatar: '叶',
+  leadDesc: 'Pilote Vibe-Coding · projet logiciel créé le 20 août 2026',
+  envTitle: "Versions de l'environnement d'exécution",
+  appVerLabel: "Version de l'application",
+  resTitle: 'Ressources logicielles référencées (composants open source)',
+  resTiptap: "Noyau de l'éditeur de texte enrichi (surcouche ProseMirror)",
+  resAntdIcons: "Bibliothèque d'icônes (source des icônes pleines)",
+  resLucide: "Bibliothèque d'icônes (source des icônes linéaires)",
+  resElectron: "Framework d'applications de bureau multiplateforme",
+  resVue: 'Framework front-end progressif (couche de rendu)',
+  resVite: 'Outil de build front-end',
+  resSql: 'Base de données embarquée WASM (couche de données)',
+  resSanitize: 'Assainissement HTML par liste blanche côté processus principal',
+  resPurify: 'Seconde protection XSS côté rendu',
+  fontsTitle: 'Polices intégrées',
+  fontsL1:
+    "L'application embarque 7 familles de polices libres couvrant les 12 langues de l'interface, plus un jeu d'emoji en couleur.",
+  fontsL1Scope: '— Noto Sans 400 (regular) depuis Fontsource, découpé par unicode-range',
+  fontsL2:
+    "Les polices sont livrées avec l'application et ne sont jamais téléchargées ; les réglages d'affichage permettent de revenir aux polices système.",
+  fontsL3: 'Toutes les polices sont sous SIL Open Font License 1.1, texte intégral ici :',
+  fontsUseLatin: 'Latin / cyrillique / grec (anglais, français, allemand, russe, islandais…)',
+  fontsUseSc: 'Chinois simplifié',
+  fontsUseTc: 'Chinois traditionnel',
+  fontsUseJp: 'Japonais',
+  fontsUseKr: 'Coréen',
+  fontsUseAr: 'Écriture arabe (arabe)',
+  fontsUseEmoji: 'Emoji en couleur (placé après toutes les familles de texte pour ne pas capter les chiffres)',
+  toolsTitle: "Outils d'assistance",
+  toolsAI:
+    "Outil IA : WorkBuddy (agent autonome IA qui pilote l'ensemble des outils ci-dessous pour tout le cycle de développement)",
+  toolsAIScope:
+    '— décomposition des besoins, génération de code, build et packaging, captures de vérification, rédaction de la documentation',
+  toolsModels: 'Modèles IA : GLM5.2 · GLM5.3 · Hunyuan3 · Deepseek-V4.1-Flash · Space-Bunny · Step-5-Preview',
+  toolsDev: "Développement et débogage (opéré par l'IA) : VS Code · Vite DevServer (rechargement à chaud)",
+  toolsPack: "Packaging et distribution (opéré par l'IA) : electron-builder (installeur NSIS)",
+  toolsGit: "Gestion de versions (opéré par l'IA) : Git",
+  legalTitle: 'Déclarations',
+  privacyTitle: 'Données et confidentialité',
+  privacyL1: 'La base de données (fichier SQLite unique) est stockée indépendamment dans un répertoire local ;',
+  privacyL2:
+    'Aucune télémétrie ni connexion réseau ; le programme ne contient aucune fonction de synchronisation cloud.',
+  licenseTitle: 'Licence',
+  licenseL1:
+    "Ce logiciel est fourni gratuitement pour un usage personnel, d'étude ou de recherche, ou à des fins non commerciales, sans aucune garantie expresse ou implicite.",
+  licenseL2:
+    "Le code source de ce logiciel est régi par la licence CC BY-NC-SA 4.0 (Creative Commons Attribution - Pas d'Utilisation Commerciale - Partage dans les Mêmes Conditions 4.0 International).",
+  licenseL3:
+    "L'utilisation non commerciale autorise la copie, la modification et la redistribution libres, à condition de créditer « 文档盒 Archbox » et de partager les œuvres dérivées sous la même licence.",
+  licenseL4:
+    'Les composants open source tiers (Electron / Vue 3 / Vite / sql.js / sanitize-html / DOMPurify, etc.) sont utilisés selon leurs propres conditions de licence et ne sont pas soumis à la licence de ce logiciel.',
+  contactTitle: "Signalement d'erreurs et suggestions",
+  contactBody:
+    "Si vous rencontrez une erreur ou avez une suggestion de fonctionnalité, n'hésitez pas à nous contacter :",
+  contactMailLabel: 'E-mail zen : '
+};

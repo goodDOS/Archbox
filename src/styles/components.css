@@ -1,0 +1,407 @@
+/* ============ 复合 UI 模式层 ============
+ * 与 base.css 的分工：
+ *   - base.css       原子级通用件（.btn / .card / .input / .badge / .chip / .tbl …）
+ *   - components.css 由原子件组合而成的「复合模式」，跨多个组件复用
+ *
+ * 收录标准：同一套类名/声明在 ≥2 个组件里重复定义。
+ * 类名与原组件内联样式保持一致，组件侧只需删除重复定义，
+ * 差异部分继续用组件 scoped 样式覆盖（scoped 特异性更高，天然生效）。
+ *
+ * 本层已收录（按加入顺序）：
+ *   .sec / .kv(.--form/.--split/.--flush/.--compact) / .btns / .seg / .pwd-row /
+ *   .gate(.gate-card-wrap/.gate-card/.gate-logo/.gate-titlebar) / .err / .dim.warn /
+ *   .fc-title / .empty-row(.center/.pad/.pad-lg) / .share-flag / .lift / .acct-row /
+ *   .region-dot / .switch input
+ *
+ * ★ 新增复合模式务必同步删净组件内同名规则 ★
+ *   scoped 的 [data-v-*] 特异性 (0,2,0) 高于本层 (0,1,0)，
+ *   残留的旧规则会静默获胜，使此后对本层的修改「改了不生效且无任何报错」。
+ */
+
+/* ---------- 设置区块（8 个 settings/*Section 复用） ---------- */
+.sec {
+  padding: 18px 20px;
+}
+/* 标题常与 .badge / Icon 并排，统一 flex 垂直居中，避免基线错位 */
+.sec h3 {
+  font-size: 15px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ---------- 键值信息表（6 处复用） ---------- */
+.kv {
+  --kv-label-w: 130px;
+  margin: 12px 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.kv-row {
+  display: flex;
+  gap: 14px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.kv-row:last-child {
+  border-bottom: none;
+}
+/* 仅锚定首列标签：用 > span:first-child 而非 .kv-row span，
+   否则会误伤行内嵌套的 span（如单位「篇」、开关滑块 .ball） */
+.kv-row > span:first-child {
+  width: var(--kv-label-w);
+  color: var(--text-2);
+  flex: none;
+}
+.kv-row code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  word-break: break-all;
+}
+
+/* 变体：表单控件行（垂直居中、留白更足） */
+.kv--form .kv-row {
+  padding: 12px 14px;
+  align-items: center;
+}
+/* 变体：标签左 / 控件右，两端对齐 */
+.kv--split .kv-row {
+  padding: 12px 14px;
+  align-items: center;
+  justify-content: space-between;
+}
+/* 变体：紧凑信息行（贴合卡片、字号更小，用于「关于」页规格表） */
+.kv--flush {
+  margin: 0;
+}
+.kv--compact .kv-row {
+  padding: 7px 12px;
+  font-size: 12.5px;
+}
+.kv--compact .kv-row code {
+  font-size: inherit;
+  word-break: normal;
+}
+
+/* ---------- 按钮组（3 处复用） ---------- */
+.btns {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+/* ---------- 分段切换器（2 处复用） ---------- */
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.seg-btn {
+  border: none;
+  background: var(--surface);
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-2);
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+}
+.seg-btn + .seg-btn {
+  border-left: 1px solid var(--border);
+}
+.seg-btn.on {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+/* ---------- 密码输入 + 右侧显隐切换（3 处复用） ---------- */
+/* Beta.285 起 .input:focus 不再画外扩辉光（只换边框色），
+ * 所以这里原先「左右各留 4px 内边距容纳辉光」的 padding+负 margin 已撤除。
+ * 撤除后密码框与同容器其它输入框左右严格对齐，宽度也恢复一致。
+ * 定位与右侧眼睛按钮的位置不受影响：眼睛是 absolute + right:8px，相对本容器的 padding box，
+ * 而容器现在与普通输入框同宽，眼睛按钮的落点恰好回到"输入框内右边缘"这一原始设计。 */
+.pwd-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.pwd-row .input {
+  flex: 1;
+  padding-right: 38px;
+}
+.pwd-eye {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-2);
+  padding: 4px;
+  display: grid;
+  place-items: center;
+  /* Beta.291：hover 变色补过渡 */
+  transition: color 0.12s ease;
+}
+.pwd-eye:hover {
+  color: var(--accent);
+}
+
+/* ---------- 门禁页（登录 UserGate / 解锁 UnlockGate 复用） ---------- */
+/* 外观与布局一并收录在此，组件侧不再重复定义。
+ * 删净组件内同名规则是硬性要求：scoped 的 [data-v-*] 特异性 (0,2,0) 高于本层 (0,1,0)，
+ * 残留的旧规则会静默获胜，使此后对本层的修改「改了不生效且无任何报错」。 */
+.gate {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background:
+    radial-gradient(600px 300px at 20% 10%, var(--accent-weak), transparent),
+    radial-gradient(600px 300px at 85% 90%, var(--accent-weak), transparent), var(--bg);
+  /* ★ Beta.288：登录/解锁门禁页渐显（与 .app-shell 同款）。
+   *   Beta.297：fill 同样留默认 none，原因见 base.css .app-shell 的注释（both 会破坏遮罩模糊采样）。 */
+  animation: app-fade-in 0.36s ease-out;
+}
+/* 卡片外层：承担横向居中与滚动。flex:1 + min-height:0 让长表单（注册模式）在卡片内滚动
+ * 而顶栏固定不动。no-drag 是因为它铺满顶栏下方全区，不豁免会挡住整块内容区的点击。
+ *
+ * ★ scrollbar-gutter: stable 与 align-items: center 是【一对】，必须同时存在 ——
+ *   本容器有 overflow-y: auto，滚动条出现时内容盒会窄 8px：
+ *   · 只有 center、没有 gutter → 居中基准左移 4px，卡片在滚动条出现/消失时左右跳（Beta.164 实测 Δ=-4px）；
+ *   · 只有 gutter、没有 center → 卡片永久贴左（Beta.164 首次交付就是这个样子，视觉上明显是坏的）；
+ *   · 两者齐备 → 内容盒宽度恒定，居中基准不动，Δ=0px 且卡片真正居中。实测 Δ=0px（探针 T9b）。
+ *   gutter 的代价：无滚动条时右侧也预留 8px，故卡片中心比「无 scrollbar 的居中」偏左 4px
+ *   （1280 宽窗口下中心 636 而非 640）—— 4px 肉眼不可辨，换取「永不跳」。
+ *   删掉任一条都会退回上述两个坏状态之一，S35/S36 与 T9b 锁死。
+ *
+ * 【不要用 ::-webkit-scrollbar { display: none } 或 overflow: overlay 来「消除缩进」】
+ *   实测（探针 T9d-T9f）：display:none 后 clientWidth 仍比 offsetWidth 少 8px，
+ *   「滚动条不占宽」的前提根本不成立，反而会引入新的 8~9px 跳变；
+ *   overlay 虽能让占宽归零，却会让滚动条浮在内容之上，与右上角「缩放」按钮产生 20px 重叠。 */
+.gate-card-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 16px 24px;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  -webkit-app-region: no-drag;
+}
+.gate-card {
+  --gate-card-w: 440px; /* 默认取口令卡宽度；登录页在组件内覆盖为 420px */
+  margin: auto 0; /* 纵向居中（flex column 下 auto 只作用于上下） */
+  width: var(--gate-card-w);
+  max-width: 100%; /* 窄窗口兜底：可用宽度已由 .gate-card-wrap 的 padding 限定 */
+  flex-shrink: 0; /* 防长内容把卡片压扁 */
+  padding: 30px 30px 26px;
+  text-align: center;
+}
+/* 26px 是「方块内放图标」的基线；登录页放汉字「档」，在组件内覆盖为 25px + 加粗（字形光学修正，
+ * 与图标形态的视觉重心不同）。两者不统一是刻意的，不是漂移。 */
+.gate-logo {
+  width: 58px;
+  height: 58px;
+  border-radius: var(--radius-lg);
+  margin: 0 auto 14px;
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: var(--accent-text);
+  font-size: 26px;
+}
+.gate-card .sub {
+  color: var(--text-2);
+  font-size: 12px;
+  margin: 6px 0 18px;
+}
+
+/* ---------- 门禁页顶栏（登录 UserGate / 解锁 UnlockGate 复用） ----------
+ * 刻意不复用 .titlebar：后者带 grid-area:tb，是 .app-shell 栅格的专属槽位，
+ * 在门禁页的 flex 列里该属性会静默失效（不报错、不布局），属于「能跑但语义错位」的伪复用。
+ * 本类与 .titlebar 共享全部视觉契约，改其中一个务必同步另一个：
+ *   44px 高 / var(--titlebar-bg) 底 / 1px var(--border) 下边 / -webkit-app-region: drag / 左内边距 12px
+ * 标记结构（<BrandMark /> + .tb-spacer + .gate-winctrl + <WindowControls />）见
+ * src/components/GateTitleBar.vue —— 两页顶栏已抽为同一组件，不再各自复制那段标记。
+ * .gate-winctrl 是该组件的内部实现细节，留在其 scoped 内，不进本层。 */
+.gate-titlebar {
+  flex-shrink: 0;
+} /* 定位层；外观来自 base.css 的 .titlebar-skin */
+
+/* ---------- 状态提示文本（3 处复用） ---------- */
+.err {
+  margin-top: 12px;
+  color: var(--danger);
+  font-size: 12px;
+}
+/* --warn 与 --c-orange 在三套主题下取值一致，统一收敛到语义色 */
+.dim.warn {
+  color: var(--c-orange);
+}
+
+/* ---------- 区块小标题（PostView 字段卡片 / VersionHistory 历史版本 复用） ---------- */
+.fc-title {
+  font-weight: 600;
+  font-size: 13.5px;
+  padding: 12px 0 8px;
+}
+
+/* ---------- 行内空态（列表/图表/日志无数据时的灰字提示） ----------
+ * 此前在 9+ 处各写一遍「内边距 + 字号 + color: var(--text-3)」：
+ *   LoginStats .lempty / RecentPosts .r-empty / SearchPage / SharePanel .sp-empty·.sp-off /
+ *   RegionNav .sb-empty / RegionView .f-empty / LogView .log-empty / LanShare .b-empty。
+ * 取值有 ±2px 微差但语义完全一致，故收敛到本层：公共部分（灰字）由本类承担，
+ * 各组件的内边距/字号/对齐差异用 scoped 覆盖（scoped 特异性更高，天然生效）。 */
+.empty-row {
+  color: var(--text-3);
+}
+.empty-row.center {
+  text-align: center;
+}
+.empty-row.pad {
+  padding: 12px;
+}
+.empty-row.pad-lg {
+  padding: 40px 16px;
+}
+
+/* ---------- 共享徽标（3 处复用：SharePanel 列表行 / RegionNav 导航 / RegionView 大区页标题） ----------
+ * 固定 14×14 绿框小图标，垂直居中，与旁边的 .region-dot（10×10 色块）同高对齐。 */
+.share-flag {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--c-green);
+}
+
+/* ---------- 大区色块（5 处复用：RegionNav 导航 / SharePanel 列表 / RegionView 标题 /
+ *             PostView 面包屑 / LanShare 浏览页） ----------
+ * 形制完全一致（圆角方块 + 主题色描边），仅尺寸随场景不同（10/11/12/16）。
+ * 底色由调用方内联绑 :style="{ background: xxx.color }" 注入，本层不管颜色。
+ * 尺寸统一走 --dot，未声明时默认 10px（导航与共享列表的默认档）。 */
+.region-dot {
+  width: var(--dot, 10px);
+  height: var(--dot, 10px);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  flex: none;
+}
+
+/* ---------- 可点卡片 hover 抬升（文档卡片墙 PostCard / 最近更新 RecentPosts 复用） ----------
+ * 悬停时边框转主题色 + 上移 1px，给出「可点」的物理暗示。取值两处完全一致。
+ * 差异（RecentPosts 额外加 --shadow）由组件按需叠加，本类只锁公共交互契约。 */
+.lift {
+  transition:
+    border-color 0.12s,
+    transform 0.12s;
+}
+.lift:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+/* ---------- 登录/恢复页「当前账户」行（UserGate 选账户 / RecoverForm 顶部身份） ----------
+ * 展示头像 + 姓名 + 次要说明的整行卡片，两处逐字相同。
+ * .uinfo 三段（容器 flex:1 / b 姓名 / i 次要说明）一并收录，避免各写一遍。 */
+.acct-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  /* Beta.291：hover 变色（宿主 .user-row:hover 改边框+底色）补过渡，避免瞬时跳变 */
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease;
+  /* 左对齐：本行是「头像 + 两行文字」的紧凑信息条，文字必须紧贴头像左缘。
+   * 宿主容器常带 text-align: center（如 .gate-card 居中布局），会继承进来把
+   * 姓名/ID 推到行中央，与左侧头像脱节 —— 视觉上就是「歪了」。 */
+  text-align: left;
+}
+.acct-row .uinfo {
+  flex: 1;
+}
+.acct-row .uinfo b {
+  display: block;
+  font-size: 13px;
+}
+.acct-row .uinfo i {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+/* ---------- 滑动开关：隐藏原生 checkbox ----------
+ * SharePanel（共享开关）与 RunlogSection（运行日志开关）都要「藏掉原生 checkbox、
+ * 保留可聚焦/可键盘操作，用视觉滑块表达开关态」。这条「隐藏」声明两处逐字相同，
+ * 故上收本层；尺寸/轨道/滑块外观两处规格不同，继续由各自 scoped 定义。
+ * ★ 组件侧必须删掉同名 .switch input 规则，否则 scoped 特异性更高会静默获胜。 */
+.switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+/* ---------- 自绘弹层的透明遮罩 + 弹出/收回动画（DatePicker / ColorPicker 复用） ----------
+ * 透明遮罩仅捕获「点击外部关闭」，不遮挡视觉（无背景色）；弹层进出动画
+ * （上方 4px + 缩放 .98 弹入/淡出）两处逐字相同，故上收本层。
+ * 组件侧以 <Transition name="pop-mask"> / <Transition name="pop"> 引用，
+ * 不得再各自定义同名的 -enter-active / -leave-active / keyframes。 */
+.pop-mask {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+}
+.pop-mask-enter-active {
+  transition: opacity 0.14s ease;
+}
+.pop-mask-leave-active {
+  transition: opacity 0.12s ease;
+}
+.pop-mask-enter-from,
+.pop-mask-leave-to {
+  opacity: 0;
+}
+
+.pop-enter-active {
+  animation: pop-in 0.14s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+.pop-leave-active {
+  animation: pop-out 0.1s ease-in both;
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes pop-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}

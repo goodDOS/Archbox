@@ -1,0 +1,49 @@
+node_modules/
+dist/
+release/
+screenshots/
+archive/
+*.log
+.DS_Store
+
+# 发布方签名私钥（仅发布者本地持有，绝不能入仓库）
+release-private.pem
+
+# 私钥/证书类文件全局兜底：只靠上面一行「文件名精确匹配」挡不住改名后的私钥，
+# 一旦有人另存为 my-key.pem 就会被提交。这里按扩展名全拦。
+# 注意 pem 也可能用于公钥，但公钥没有保密价值，宁可多拦也不要漏拦私钥。
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+# 打包与下载卡片产物（落在产物空间 /workspace/，不进仓库）
+*.zip
+*.exe
+
+# 生成脚本的中间产物：未覆盖清单（跑一次就会重新生成）
+.i18n-missing-*.json
+
+# 依赖与构建缓存
+.eslintcache
+.vite/
+
+# 演示数据：含真实物理地址（MAC）、用户 ID、审计日志。
+# 由 `npm run seed` / `node scripts/seed-test-data.js` 现场生成，不随仓库分发。
+seed-data/
+seed-verify/
+
+# 私有开发规矩（本机 AI 协作配置），不是项目文档
+.codebuddy/
+
+# 内部交付物：验收清单不进公开仓库。
+# ★ 不能用「验收清单-Beta.*.md」这种只锚前缀的写法 ★
+#   本轮实际生成的文件名是「验收清单-悬停提示层与字体体积-基于Beta.323.md」，
+#   Beta 号在中间，前缀匹配完全漏掉，照样被提交了进去。
+#   这里按「验收清单-*.md」整体拦，任何命名都跑不掉。
+验收清单-*.md
+
+# 废弃文件：版本停在 0.2.0-test、写死沙箱路径、无脚本引用
+build-installer.nsi
